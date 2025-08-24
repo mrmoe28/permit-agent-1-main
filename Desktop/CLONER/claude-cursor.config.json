@@ -1,0 +1,41 @@
+{
+  "projectRoot": "/Users/ekodevapps/Desktop/CLONER",
+  "watchPaths": [
+    "src/**/*",
+    "pages/**/*",
+    "app/**/*",
+    "components/**/*",
+    "lib/**/*",
+    "utils/**/*",
+    "types/**/*",
+    "hooks/**/*",
+    "styles/**/*",
+    "*.ts",
+    "*.tsx",
+    "*.js",
+    "*.jsx",
+    "*.json",
+    "*.md"
+  ],
+  "excludePatterns": [
+    "node_modules/**",
+    ".git/**",
+    ".next/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "*.log",
+    ".env*",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock"
+  ],
+  "conflictThresholdMs": 5000,
+  "backupEnabled": true,
+  "backupPath": ".claude-cursor-sync/backups",
+  "wsPort": 3001,
+  "mcpPort": 3002,
+  "logLevel": "info",
+  "enableNotifications": true,
+  "autoResolveConflicts": false
+}
