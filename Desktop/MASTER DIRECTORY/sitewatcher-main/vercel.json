@@ -3,7 +3,8 @@
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "dist/public",
   "env": {
-    "VERCEL": "1"
+    "VERCEL": "1",
+    "DISABLE_VERCEL_FRAMEWORK_DETECTION": "1"
   },
   "functions": {
     "api/**/*.ts": {
