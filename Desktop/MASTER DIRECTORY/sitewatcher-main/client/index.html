@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Site Watcher - Professional SEO Analysis & Website Monitoring Tool</title>
+    
+    <!-- Basic Meta Tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Professional SEO analysis and website monitoring tool. Track rankings, analyze performance, get actionable insights to improve your website's search engine visibility." />
+    <meta name="keywords" content="SEO analysis, website monitoring, search engine optimization, keyword tracking, website performance, SEO tool, search rankings" />
+    <meta name="author" content="Site Watcher" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Site Watcher - Professional SEO Analysis & Monitoring" />
+    <meta property="og:description" content="Monitor your website's SEO performance and get actionable insights to improve search engine rankings. Track keywords, analyze competitors, and optimize your online presence." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sitewatcher-seo.vercel.app" />
+    <meta property="og:image" content="https://sitewatcher-seo.vercel.app/og-image.png" />
+    <meta property="og:image:alt" content="Site Watcher SEO Dashboard" />
+    <meta property="og:site_name" content="Site Watcher" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Site Watcher - Professional SEO Analysis & Monitoring" />
+    <meta name="twitter:description" content="Monitor your website's SEO performance and get actionable insights to improve search engine rankings." />
+    <meta name="twitter:image" content="https://sitewatcher-seo.vercel.app/twitter-image.png" />
+    <meta name="twitter:image:alt" content="Site Watcher SEO Dashboard" />
+    
+    <!-- Additional SEO Meta Tags -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://sitewatcher-seo.vercel.app" />
+    
+    <!-- Font Preloading for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Site Watcher",
+      "description": "Professional SEO analysis and website monitoring tool",
+      "url": "https://sitewatcher-seo.vercel.app",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Site Watcher",
+        "url": "https://sitewatcher-seo.vercel.app"
+      },
+      "featureList": [
+        "SEO Analysis",
+        "Website Monitoring", 
+        "Keyword Tracking",
+        "Performance Analytics",
+        "Competitor Analysis"
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Performance and Analytics -->
+    <script>
+      // Basic performance monitoring
+      window.addEventListener('load', function() {
+        if ('performance' in window) {
+          setTimeout(function() {
+            const perfData = performance.getEntriesByType('navigation')[0];
+            if (perfData) {
+              console.log('Page Load Time:', perfData.loadEventEnd - perfData.fetchStart, 'ms');
+            }
+          }, 0);
+        }
+      });
+    </script>
+  </body>
+</html>

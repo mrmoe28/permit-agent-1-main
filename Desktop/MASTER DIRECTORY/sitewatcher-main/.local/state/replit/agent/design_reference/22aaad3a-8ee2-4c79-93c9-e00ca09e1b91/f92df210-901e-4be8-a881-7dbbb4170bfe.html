@@ -1,0 +1,571 @@
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Site Watcher - Professional SEO Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        border: "hsl(214, 32%, 91%)",
+                        input: "hsl(214, 32%, 91%)",
+                        ring: "hsl(221, 83%, 53%)",
+                        background: "hsl(0, 0%, 100%)",
+                        foreground: "hsl(222, 84%, 5%)",
+                        primary: {
+                            DEFAULT: "hsl(221, 83%, 53%)",
+                            foreground: "hsl(210, 40%, 98%)"
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(210, 40%, 96%)",
+                            foreground: "hsl(222, 84%, 5%)"
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(0, 84%, 60%)",
+                            foreground: "hsl(210, 40%, 98%)"
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210, 40%, 96%)",
+                            foreground: "hsl(215, 16%, 47%)"
+                        },
+                        accent: {
+                            DEFAULT: "hsl(210, 40%, 96%)",
+                            foreground: "hsl(222, 84%, 5%)"
+                        },
+                        card: {
+                            DEFAULT: "hsl(0, 0%, 100%)",
+                            foreground: "hsl(222, 84%, 5%)"
+                        }
+                    },
+                    borderRadius: {
+                        lg: "0.5rem",
+                        md: "0.375rem",
+                        sm: "0.25rem"
+                    }
+                }
+            },
+            darkMode: 'class'
+        };
+    </script>
+</head>
+<body class="font-sans bg-background text-foreground antialiased">
+    <!-- @COMPONENT: AppLayout [Main application layout with sidebar and header] -->
+    <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+        <!-- @COMPONENT: Sidebar [Navigation sidebar with menu items] -->
+        <aside class="hidden md:flex md:w-64 md:flex-col">
+            <div class="flex flex-col flex-grow pt-5 overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                <div class="flex items-center flex-shrink-0 px-4">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-search-dollar text-white text-sm"></i>
+                        </div>
+                        <span class="ml-3 text-lg font-semibold text-gray-900 dark:text-white">SEO Watcher</span>
+                    </div>
+                </div>
+                <div class="mt-8 flex-grow flex flex-col">
+                    <nav class="flex-1 px-4 space-y-1">
+                        <!-- @MAP: navigationItems.map(item => ( -->
+                        <a href="#" class="bg-primary/10 text-primary group flex items-center px-3 py-2 text-sm font-medium rounded-md" data-bind="nav.activeItem">
+                            <i class="fas fa-tachometer-alt text-primary mr-3 text-sm"></i>
+                            Dashboard
+                        </a>
+                        <a href="#" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                            <i class="fas fa-plus-circle text-gray-400 group-hover:text-gray-500 mr-3 text-sm"></i>
+                            Add Site
+                        </a>
+                        <a href="#" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                            <i class="fas fa-chart-line text-gray-400 group-hover:text-gray-500 mr-3 text-sm"></i>
+                            Analytics
+                        </a>
+                        <a href="#" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                            <i class="fas fa-key text-gray-400 group-hover:text-gray-500 mr-3 text-sm"></i>
+                            Keywords
+                        </a>
+                        <a href="#" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                            <i class="fas fa-history text-gray-400 group-hover:text-gray-500 mr-3 text-sm"></i>
+                            History
+                        </a>
+                        <a href="#" class="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                            <i class="fas fa-cog text-gray-400 group-hover:text-gray-500 mr-3 text-sm"></i>
+                            Settings
+                        </a>
+                        <!-- @END_MAP )) -->
+                    </nav>
+                </div>
+            </div>
+        </aside>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent [Main content area with header and dashboard] -->
+        <div class="flex flex-col flex-1 overflow-hidden">
+            <!-- @COMPONENT: Header [Top navigation bar with search and user menu] -->
+            <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div class="flex items-center">
+                        <button class="md:hidden p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <i class="fas fa-bars text-lg"></i>
+                        </button>
+                        <h1 class="ml-2 md:ml-0 text-2xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" data-event="click:toggleTheme">
+                            <i class="fas fa-moon text-lg"></i>
+                        </button>
+                        <button class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="fas fa-bell text-lg"></i>
+                        </button>
+                        <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-medium" data-bind="user.initials">JD</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <!-- @END_COMPONENT: Header -->
+
+            <!-- @COMPONENT: DashboardContent [Main dashboard content with analysis form and results] -->
+            <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+                <div class="py-6">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <!-- @COMPONENT: URLAnalysisForm [Form for entering URL to analyze] -->
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Analyze Website</h2>
+                            <div class="flex space-x-4">
+                                <div class="flex-1">
+                                    <label for="url-input" class="sr-only">Website URL</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fas fa-globe text-gray-400 text-sm"></i>
+                                        </div>
+                                        <input type="url" id="url-input" 
+                                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                               placeholder="Enter website URL (e.g., https://example.com)"
+                                               data-bind="analysis.url" data-mock="true">
+                                    </div>
+                                </div>
+                                <button class="px-6 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center space-x-2"
+                                        data-event="click:analyzeUrl" data-implementation="Should validate URL and trigger SEO analysis">
+                                    <i class="fas fa-search text-sm"></i>
+                                    <span>Analyze</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- @END_COMPONENT: URLAnalysisForm -->
+
+                        <!-- @COMPONENT: LoadingState [Loading indicator during analysis] -->
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 hidden" data-bind="analysis.loading">
+                            <div class="flex items-center space-x-4">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Analyzing Website</h3>
+                                    <p class="text-gray-600 dark:text-gray-400">Running SEO analysis using Google PageSpeed Insights...</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 65%" data-bind="analysis.progress"></div>
+                                </div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2" data-bind="analysis.status">Checking page speed performance...</p>
+                            </div>
+                        </div>
+                        <!-- @END_COMPONENT: LoadingState -->
+
+                        <!-- @COMPONENT: AnalysisResults [SEO analysis results dashboard] -->
+                        <div class="space-y-6">
+                            <!-- @COMPONENT: MetricsOverview [Key SEO metrics cards] -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <!-- @MAP: seoMetrics.map(metric => ( -->
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">SEO Score</p>
+                                            <p class="text-3xl font-bold text-gray-900 dark:text-white" data-bind="metrics.seoScore">87</p>
+                                        </div>
+                                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-chart-line text-green-600 dark:text-green-400 text-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-arrow-up text-green-500 text-xs mr-1"></i>
+                                            <span class="text-sm text-green-600 dark:text-green-400 font-medium" data-bind="metrics.seoChange">+12%</span>
+                                            <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">vs last week</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Page Speed</p>
+                                            <p class="text-3xl font-bold text-gray-900 dark:text-white" data-bind="metrics.pageSpeed">94</p>
+                                        </div>
+                                        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-tachometer-alt text-blue-600 dark:text-blue-400 text-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-arrow-up text-green-500 text-xs mr-1"></i>
+                                            <span class="text-sm text-green-600 dark:text-green-400 font-medium" data-bind="metrics.speedChange">+8%</span>
+                                            <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">vs last week</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Keywords</p>
+                                            <p class="text-3xl font-bold text-gray-900 dark:text-white" data-bind="metrics.keywords">156</p>
+                                        </div>
+                                        <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-key text-purple-600 dark:text-purple-400 text-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-arrow-up text-green-500 text-xs mr-1"></i>
+                                            <span class="text-sm text-green-600 dark:text-green-400 font-medium" data-bind="metrics.keywordChange">+23</span>
+                                            <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">new rankings</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Traffic</p>
+                                            <p class="text-3xl font-bold text-gray-900 dark:text-white" data-bind="metrics.traffic">12.4K</p>
+                                        </div>
+                                        <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-users text-orange-600 dark:text-orange-400 text-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-arrow-down text-red-500 text-xs mr-1"></i>
+                                            <span class="text-sm text-red-600 dark:text-red-400 font-medium" data-bind="metrics.trafficChange">-3%</span>
+                                            <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">vs last week</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                            </div>
+                            <!-- @END_COMPONENT: MetricsOverview -->
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <!-- @COMPONENT: SEORecommendations [Actionable SEO improvement suggestions] -->
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">SEO Recommendations</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Based on Google best practices</p>
+                                    </div>
+                                    <div class="p-6">
+                                        <div class="space-y-4">
+                                            <!-- @MAP: recommendations.map(item => ( -->
+                                            <div class="flex items-start space-x-3">
+                                                <div class="flex-shrink-0 w-6 h-6 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-exclamation text-red-600 dark:text-red-400 text-xs"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white" data-bind="recommendation.title">Missing Meta Description</h4>
+                                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" data-bind="recommendation.description">Add unique meta descriptions to improve click-through rates from search results.</p>
+                                                    <div class="mt-2">
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300">
+                                                            High Priority
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-start space-x-3">
+                                                <div class="flex-shrink-0 w-6 h-6 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-xs"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white">Optimize Images</h4>
+                                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Compress images to reduce page load time. Found 8 images that could be optimized.</p>
+                                                    <div class="mt-2">
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300">
+                                                            Medium Priority
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-start space-x-3">
+                                                <div class="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-info text-blue-600 dark:text-blue-400 text-xs"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white">Add Schema Markup</h4>
+                                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Implement structured data to help search engines better understand your content.</p>
+                                                    <div class="mt-2">
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                                                            Low Priority
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- @END_MAP )) -->
+                                        </div>
+                                        <div class="mt-6">
+                                            <button class="w-full px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                                    data-event="click:generateReport" data-implementation="Should generate detailed SEO report">
+                                                Generate Detailed Report
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- @END_COMPONENT: SEORecommendations -->
+
+                                <!-- @COMPONENT: KeywordPerformance [Keyword tracking and performance] -->
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Top Keywords</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Current rankings and trends</p>
+                                    </div>
+                                    <div class="p-6">
+                                        <div class="space-y-4">
+                                            <!-- @MAP: keywords.map(keyword => ( -->
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex-1">
+                                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white" data-bind="keyword.term">web development</h4>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400">Search volume: <span data-bind="keyword.volume" data-mock="true">12,000</span>/month</p>
+                                                </div>
+                                                <div class="flex items-center space-x-4">
+                                                    <div class="text-right">
+                                                        <div class="text-sm font-medium text-gray-900 dark:text-white">#<span data-bind="keyword.rank">3</span></div>
+                                                        <div class="flex items-center text-xs">
+                                                            <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+                                                            <span class="text-green-600 dark:text-green-400" data-bind="keyword.change">+2</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex-1">
+                                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white">seo optimization</h4>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400">Search volume: 8,500/month</p>
+                                                </div>
+                                                <div class="flex items-center space-x-4">
+                                                    <div class="text-right">
+                                                        <div class="text-sm font-medium text-gray-900 dark:text-white">#7</div>
+                                                        <div class="flex items-center text-xs">
+                                                            <i class="fas fa-arrow-down text-red-500 mr-1"></i>
+                                                            <span class="text-red-600 dark:text-red-400">-1</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex-1">
+                                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white">website analysis</h4>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400">Search volume: 5,200/month</p>
+                                                </div>
+                                                <div class="flex items-center space-x-4">
+                                                    <div class="text-right">
+                                                        <div class="text-sm font-medium text-gray-900 dark:text-white">#12</div>
+                                                        <div class="flex items-center text-xs">
+                                                            <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+                                                            <span class="text-green-600 dark:text-green-400">+5</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- @END_MAP )) -->
+                                        </div>
+                                        <div class="mt-6">
+                                            <button class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                                    data-event="click:viewAllKeywords" data-implementation="Should navigate to keyword management page">
+                                                View All Keywords
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- @END_COMPONENT: KeywordPerformance -->
+                            </div>
+
+                            <!-- @COMPONENT: RecentAnalyses [History of recent site analyses] -->
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Analyses</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Your latest website scans and results</p>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead class="bg-gray-50 dark:bg-gray-700">
+                                            <tr>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Website</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SEO Score</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Speed</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Issues</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Analyzed</th>
+                                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            <!-- @MAP: recentAnalyses.map(analysis => ( -->
+                                            <tr data-bind="analysis.id" data-mock="true">
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <div class="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center mr-3">
+                                                            <i class="fas fa-globe text-gray-500 dark:text-gray-400 text-sm"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div class="text-sm font-medium text-gray-900 dark:text-white" data-bind="analysis.domain">example.com</div>
+                                                            <div class="text-sm text-gray-500 dark:text-gray-400" data-bind="analysis.url">https://example.com/homepage</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="analysis.seoScore">87</span>
+                                                        <div class="ml-2 w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                            <div class="bg-green-500 h-2 rounded-full" style="width: 87%" data-bind="analysis.seoScoreBar"></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300">
+                                                        <span data-bind="analysis.speed">Fast</span>
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-bind="analysis.issues">3</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" data-bind="analysis.date">2 hours ago</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button class="text-primary hover:text-primary/80 mr-4" data-event="click:viewAnalysis" data-implementation="Should open detailed analysis view">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" data-event="click:deleteAnalysis">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+
+                                            <tr data-mock="true">
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <div class="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center mr-3">
+                                                            <i class="fas fa-globe text-gray-500 dark:text-gray-400 text-sm"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div class="text-sm font-medium text-gray-900 dark:text-white">mystore.com</div>
+                                                            <div class="text-sm text-gray-500 dark:text-gray-400">https://mystore.com/products</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <span class="text-sm font-medium text-gray-900 dark:text-white">72</span>
+                                                        <div class="ml-2 w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                            <div class="bg-yellow-500 h-2 rounded-full" style="width: 72%"></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300">
+                                                        Moderate
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">7</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1 day ago</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button class="text-primary hover:text-primary/80 mr-4" data-event="click:viewAnalysis">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" data-event="click:deleteAnalysis">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <!-- @END_MAP )) -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- @END_COMPONENT: RecentAnalyses -->
+                        </div>
+                        <!-- @END_COMPONENT: AnalysisResults -->
+                    </div>
+                </div>
+            </main>
+            <!-- @END_COMPONENT: DashboardContent -->
+        </div>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+    <!-- @END_COMPONENT: AppLayout -->
+
+    <!-- @COMPONENT: NotificationToast [Toast notifications for user feedback] -->
+    <div class="fixed top-4 right-4 z-50 hidden" id="toast" data-bind="notification.visible">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-check-circle text-green-500" data-bind="notification.icon"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white" data-bind="notification.title">Analysis Complete</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400" data-bind="notification.message">Website analysis has been completed successfully.</p>
+                </div>
+                <div class="ml-4 flex-shrink-0">
+                    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" data-event="click:dismissNotification">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: NotificationToast -->
+
+    <script>
+        (function() {
+            // TODO: Implement business logic, API calls, and state management
+            // TODO: Integrate Google PageSpeed Insights API
+            // TODO: Connect to Neon PostgreSQL database
+            // TODO: Implement real-time SEO analysis
+            
+            // Mock interaction handlers for demonstration
+            const handleUrlAnalysis = () => {
+                // Simulate analysis process
+                console.log('Starting SEO analysis...');
+            };
+
+            const toggleTheme = () => {
+                const html = document.documentElement;
+                html.classList.toggle('dark');
+                localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+            };
+
+            // Initialize theme from localStorage
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Add event listeners
+            document.addEventListener('DOMContentLoaded', function() {
+                // Theme toggle
+                const themeToggle = document.querySelector('[data-event="click:toggleTheme"]');
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', toggleTheme);
+                }
+
+                // URL analysis
+                const analyzeButton = document.querySelector('[data-event="click:analyzeUrl"]');
+                if (analyzeButton) {
+                    analyzeButton.addEventListener('click', handleUrlAnalysis);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

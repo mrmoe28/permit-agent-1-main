@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://sitewatcher-seo.vercel.app/sitemap.xml
+
+# Allow all search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Block certain paths (if any)
+# Disallow: /api/
+# Disallow: /admin/
+
+# Crawl-delay (optional)
+# Crawl-delay: 1
