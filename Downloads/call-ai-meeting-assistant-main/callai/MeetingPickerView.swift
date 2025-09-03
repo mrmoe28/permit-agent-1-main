@@ -51,7 +51,7 @@ struct MeetingPickerView: View {
                 }
             }
             .listStyle(.sidebar)
-            .background(Color(uiColor: .systemBackground))
+            .background(Color(nsColor: .controlBackgroundColor))
             .scrollContentBackground(.hidden)
             .navigationTitle("Select Meeting")
             
@@ -90,21 +90,53 @@ struct CustomMeetingView: View {
     let onSave: (Meeting) -> Void
     @Environment(\.dismiss) private var dismiss
     
+    private var headerView: some View {
+        HStack {
+            Text("New Meeting")
+                .font(.title2)
+                .fontWeight(.bold)
+            Spacer()
+        }
+        .padding()
+        .background(Color.secondary.opacity(0.1))
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("New Meeting")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Spacer()
+                headerView
+                formContentView
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
                 }
-                .padding()
-                .background(Color(.secondarySystemBackground))
                 
-                // Form content with larger container
-                ScrollView {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Save") {
+                        let endDate = date.addingTimeInterval(duration * 60)
+                        let meeting = Meeting(
+                            title: title.isEmpty ? "Custom Meeting" : title,
+                            startDate: date,
+                            endDate: endDate,
+                            participants: []
+                        )
+                        onSave(meeting)
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .frame(width: 600, height: 500)
+        .presentationDetents([.height(500)])
+        .presentationDragIndicator(.hidden)
+    }
+    
+    private var formContentView: some View {
+        ScrollView {
                     VStack(spacing: 24) {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Meeting Details")
@@ -163,7 +195,7 @@ struct CustomMeetingView: View {
                             }
                         }
                         .padding()
-                        .background(Color(uiColor: .secondarySystemBackground))
+                        .background(Color.secondary.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         
                         // Action buttons
@@ -197,35 +229,7 @@ struct CustomMeetingView: View {
                     }
                     .padding()
                 }
-                .background(Color(uiColor: .systemBackground))
-            }
-            .frame(width: 600, height: 500)
-            .presentationDetents([.height(500)])
-            .presentationDragIndicator(.hidden)
-            
-            .toolbar {
-                ToolbarItem(placement: .navigation) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Save") {
-                        let endDate = date.addingTimeInterval(duration * 60)
-                        let meeting = Meeting(
-                            title: title.isEmpty ? "Custom Meeting" : title,
-                            startDate: date,
-                            endDate: endDate,
-                            participants: []
-                        )
-                        onSave(meeting)
-                    }
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .buttonStyle(.borderedProminent)
-                }
-            }
-        }
+                .background(Color(nsColor: .controlBackgroundColor))
     }
 }
 

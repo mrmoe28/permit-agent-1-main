@@ -32,12 +32,8 @@ struct callaiApp: App {
         }
         
         // Initialize API key on app launch
-        do {
-            APIKeyConfig.shared.initializeKeychainIfNeeded()
-            print("✅ API Key configuration initialized")
-        } catch {
-            print("⚠️ Warning: API Key initialization failed: \(error)")
-        }
+        APIKeyConfig.shared.initializeKeychainIfNeeded()
+        print("✅ API Key configuration initialized")
     }
 
     var body: some Scene {

@@ -17,7 +17,7 @@ struct RecordingView: View {
                 // Meeting picker at the top
                 MeetingSidebar(selectedMeeting: $selectedMeeting)
                     .frame(height: 120)
-                    .background(Color(uiColor: .secondarySystemBackground))
+                    .background(Color.secondary.opacity(0.1))
                 
                 // Main content area
                 ScrollView {
@@ -66,7 +66,7 @@ struct RecordingView: View {
                     .padding(20)
                 }
                 .scrollContentBackground(.hidden)
-                .background(Color(uiColor: .systemBackground))
+                .background(Color(nsColor: .controlBackgroundColor))
             }
             .navigationTitle("Record Meeting")
             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: selectedMeeting != nil)
@@ -236,6 +236,10 @@ struct RecordingControlsView: View {
     let startAction: () async -> Void
     let stopAction: () -> Void
     
+    private var shadowColor: Color {
+        canRecord ? .red.opacity(0.3) : .gray.opacity(0.3)
+    }
+    
     var body: some View {
         VStack(spacing: 32) {
             if isRecording {
@@ -291,7 +295,7 @@ struct RecordingControlsView: View {
                             .frame(width: 90, height: 90)
                             .background(canRecord ? .red : .gray, in: Circle())
                             .foregroundStyle(.white)
-                            .shadow(color: canRecord ? .red.opacity(0.3) : .gray.opacity(0.3), radius: 8, x: 0, y: 4)
+                            .shadow(color: shadowColor, radius: 8, x: 0, y: 4)
                     }
                     .disabled(!canRecord)
                     .scaleEffect(canRecord ? 1.0 : 0.9)
@@ -401,40 +405,37 @@ struct MeetingSidebar: View {
     @State private var customMeetingDate = Date()
     @State private var customMeetingDuration = 60.0
     
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header with prominent new meeting button
-            VStack(spacing: 16) {
-                Text("Select Meeting")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Button {
-                    showingCustomMeeting = true
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                        Text("New Meeting")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(.blue.gradient)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+    private var meetingSelectorHeader: some View {
+        VStack(spacing: 16) {
+            Text("Select Meeting")
+                .font(.title2)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            Button {
+                showingCustomMeeting = true
+            } label: {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                    Text("New Meeting")
+                        .fontWeight(.semibold)
                 }
-                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(.blue.gradient)
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
-            
-            Divider()
-            
-            // Meetings list
-            List {
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 20)
+        .padding(.bottom, 16)
+    }
+    
+    private var meetingsList: some View {
+        List {
                 if calendarService.authorizationStatus != .fullAccess {
                     Section {
                         VStack(spacing: 12) {
@@ -498,8 +499,17 @@ struct MeetingSidebar: View {
             }
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            meetingSelectorHeader
+            
+            Divider()
+            
+            meetingsList
         }
-        .background(Color(uiColor: .secondarySystemBackground))
+        .background(Color.secondary.opacity(0.1))
         .onAppear {
             if calendarService.authorizationStatus == .fullAccess {
                 Task {

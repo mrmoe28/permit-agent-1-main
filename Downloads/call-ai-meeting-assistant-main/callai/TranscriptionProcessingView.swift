@@ -80,47 +80,41 @@ struct TranscriptionProcessingView: View {
         currentStep = .transcribing
         
         Task {
-            do {
-                let transcript = await transcriptionService.transcribeAudio(from: audioURL, for: meeting)
-                
-                guard let transcript = transcript else {
-                    await MainActor.run {
-                        let errorMsg = transcriptionService.errorMessage ?? "Transcription failed"
-                        currentStep = .error(errorMsg)
-                    }
+            let transcript = await transcriptionService.transcribeAudio(from: audioURL, for: meeting)
+            
+            guard let transcript = transcript else {
+                await MainActor.run {
+                    let errorMsg = transcriptionService.errorMessage ?? "Transcription failed"
+                    currentStep = .error(errorMsg)
+                }
+                return
+            }
+            
+            await MainActor.run {
+                generatedTranscript = transcript
+                modelContext.insert(transcript)
+                do {
+                    try modelContext.save()
+                    currentStep = .generatingSummary
+                } catch {
+                    currentStep = .error("Failed to save transcript: \(error.localizedDescription)")
+                    return
+                }
+            }
+            
+            await summaryService.generateSummary(for: transcript)
+            
+            await MainActor.run {
+                if let errorMsg = summaryService.errorMessage {
+                    currentStep = .error("Summary generation failed: \(errorMsg)")
                     return
                 }
                 
-                await MainActor.run {
-                    generatedTranscript = transcript
-                    modelContext.insert(transcript)
-                    do {
-                        try modelContext.save()
-                        currentStep = .generatingSummary
-                    } catch {
-                        currentStep = .error("Failed to save transcript: \(error.localizedDescription)")
-                        return
-                    }
-                }
-                
-                await summaryService.generateSummary(for: transcript)
-                
-                await MainActor.run {
-                    if let errorMsg = summaryService.errorMessage {
-                        currentStep = .error("Summary generation failed: \(errorMsg)")
-                        return
-                    }
-                    
-                    do {
-                        try modelContext.save()
-                        currentStep = .completed
-                    } catch {
-                        currentStep = .error("Failed to save summary: \(error.localizedDescription)")
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    currentStep = .error("Processing failed: \(error.localizedDescription)")
+                do {
+                    try modelContext.save()
+                    currentStep = .completed
+                } catch {
+                    currentStep = .error("Failed to save summary: \(error.localizedDescription)")
                 }
             }
         }
