@@ -62,6 +62,13 @@ class PermissionDebugService: ObservableObject {
         let hasCal = bundle.object(forInfoDictionaryKey: "NSCalendarsUsageDescription") != nil
         let hasFullCal = bundle.object(forInfoDictionaryKey: "NSCalendarsFullAccessUsageDescription") != nil
         
+        // Debug: Print all Info.plist keys to see what's actually there
+        print("=== Debug Info.plist Keys ===")
+        print("NSMicrophoneUsageDescription: \(bundle.object(forInfoDictionaryKey: "NSMicrophoneUsageDescription") as? String ?? "MISSING")")
+        print("NSCalendarsUsageDescription: \(bundle.object(forInfoDictionaryKey: "NSCalendarsUsageDescription") as? String ?? "MISSING")")  
+        print("NSCalendarsFullAccessUsageDescription: \(bundle.object(forInfoDictionaryKey: "NSCalendarsFullAccessUsageDescription") as? String ?? "MISSING")")
+        print("================================")
+        
         infoPlistStatus = InfoPlistStatus(
             hasMicrophoneKey: hasMic,
             hasCalendarKey: hasCal,

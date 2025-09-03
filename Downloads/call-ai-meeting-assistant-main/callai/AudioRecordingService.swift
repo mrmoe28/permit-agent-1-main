@@ -1,14 +1,13 @@
 import Foundation
 import AVFoundation
+import AVFAudio
 import SwiftUI
 
-#if os(macOS)
-enum MacOSRecordPermission {
+enum RecordingPermissionStatus {
     case granted
     case denied
-    case notDetermined
+    case undetermined
 }
-#endif
 
 @MainActor
 class AudioRecordingService: NSObject, ObservableObject {
@@ -17,11 +16,7 @@ class AudioRecordingService: NSObject, ObservableObject {
     @Published var recordingLevel: Float = 0
     @Published var errorMessage: String?
     
-    #if os(iOS)
-    @Published var authorizationStatus: AVAudioSession.RecordPermission = .undetermined
-    #else
-    @Published var authorizationStatus: MacOSRecordPermission = .notDetermined
-    #endif
+    @Published var authorizationStatus: RecordingPermissionStatus = .undetermined
     
     private var audioRecorder: AVAudioRecorder?
     private var recordingTimer: Timer?
@@ -36,7 +31,29 @@ class AudioRecordingService: NSObject, ObservableObject {
     
     func checkRecordingPermission() {
         #if os(iOS)
-        authorizationStatus = AVAudioSession.sharedInstance().recordPermission
+        if #available(iOS 17.0, *) {
+            switch AVAudioApplication.recordPermission {
+            case .granted:
+                authorizationStatus = .granted
+            case .denied:
+                authorizationStatus = .denied
+            case .undetermined:
+                authorizationStatus = .undetermined
+            @unknown default:
+                authorizationStatus = .undetermined
+            }
+        } else {
+            switch AVAudioSession.sharedInstance().recordPermission {
+            case .granted:
+                authorizationStatus = .granted
+            case .denied:
+                authorizationStatus = .denied
+            case .undetermined:
+                authorizationStatus = .undetermined
+            @unknown default:
+                authorizationStatus = .undetermined
+            }
+        }
         #else
         // On macOS, check microphone permission using AVCaptureDevice
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
@@ -45,18 +62,26 @@ class AudioRecordingService: NSObject, ObservableObject {
         case .denied, .restricted:
             authorizationStatus = .denied
         case .notDetermined:
-            authorizationStatus = .notDetermined
+            authorizationStatus = .undetermined
         @unknown default:
-            authorizationStatus = .notDetermined
+            authorizationStatus = .undetermined
         }
         #endif
     }
     
     func requestRecordingPermission() async {
         #if os(iOS)
-        await AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted in
-            Task { @MainActor in
-                self?.authorizationStatus = granted ? .granted : .denied
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { [weak self] granted in
+                Task { @MainActor in
+                    self?.authorizationStatus = granted ? .granted : .denied
+                }
+            }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted in
+                Task { @MainActor in
+                    self?.authorizationStatus = granted ? .granted : .denied
+                }
             }
         }
         #else

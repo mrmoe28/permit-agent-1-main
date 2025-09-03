@@ -81,7 +81,7 @@ struct RecordingView: View {
             }
             .onAppear {
                 // Request microphone permission on appear
-                if audioService.authorizationStatus == .undetermined {
+                if audioService.authorizationStatus == RecordingPermissionStatus.undetermined {
                     Task {
                         await audioService.requestRecordingPermission()
                     }
@@ -92,7 +92,7 @@ struct RecordingView: View {
     
     private func checkRecordingPermission() -> Bool {
         #if os(iOS)
-        return audioService.authorizationStatus == .granted
+        return audioService.authorizationStatus == RecordingPermissionStatus.granted
         #else
         return audioService.authorizationStatus == .granted
         #endif

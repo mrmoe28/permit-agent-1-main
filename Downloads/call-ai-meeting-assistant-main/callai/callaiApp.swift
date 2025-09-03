@@ -15,12 +15,29 @@ struct callaiApp: App {
     init() {
         do {
             modelContainer = try ModelContainer(for: Meeting.self, Transcript.self)
+            print("✅ Successfully initialized Core Data model container")
         } catch {
-            fatalError("Failed to initialize model container: \(error)")
+            print("❌ Failed to initialize model container: \(error)")
+            print("📝 Creating fallback in-memory container...")
+            
+            // Create fallback in-memory container instead of crashing
+            do {
+                let config = ModelConfiguration(isStoredInMemoryOnly: true)
+                modelContainer = try ModelContainer(for: Meeting.self, Transcript.self, configurations: config)
+                print("✅ Successfully created fallback in-memory container")
+            } catch {
+                print("💥 Fatal error: Could not create fallback container: \(error)")
+                fatalError("Failed to initialize any model container: \(error)")
+            }
         }
         
         // Initialize API key on app launch
-        APIKeyConfig.shared.initializeKeychainIfNeeded()
+        do {
+            APIKeyConfig.shared.initializeKeychainIfNeeded()
+            print("✅ API Key configuration initialized")
+        } catch {
+            print("⚠️ Warning: API Key initialization failed: \(error)")
+        }
     }
 
     var body: some Scene {

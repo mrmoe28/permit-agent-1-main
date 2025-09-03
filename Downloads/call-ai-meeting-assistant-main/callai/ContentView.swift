@@ -39,6 +39,10 @@ struct ContentView: View {
             checkAPIKeyConfiguration()
             // Initialize permission debug service
             _ = PermissionDebugService.shared
+            // Proactively request permissions
+            Task {
+                await requestInitialPermissions()
+            }
         }
         #if DEBUG
         .toolbar {
@@ -59,6 +63,22 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 selectedTab = 3 // Automatically switch to Settings tab if no API key
             }
+        }
+    }
+    
+    private func requestInitialPermissions() async {
+        do {
+            // Request microphone permission proactively
+            print("Requesting microphone permission...")
+            await PermissionDebugService.shared.testMicrophonePermission()
+            
+            // Request calendar permission proactively  
+            print("Requesting calendar permission...")
+            await PermissionDebugService.shared.testCalendarPermission()
+            
+            print("Permission requests completed successfully")
+        } catch {
+            print("Error requesting permissions: \(error)")
         }
     }
 }
