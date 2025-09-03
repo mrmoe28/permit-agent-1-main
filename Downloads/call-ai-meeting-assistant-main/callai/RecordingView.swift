@@ -17,7 +17,7 @@ struct RecordingView: View {
                 // Meeting picker at the top
                 MeetingSidebar(selectedMeeting: $selectedMeeting)
                     .frame(height: 120)
-                    .background(Color(.secondarySystemBackground))
+                    .background(Color(uiColor: .secondarySystemBackground))
                 
                 // Main content area
                 ScrollView {
@@ -66,7 +66,7 @@ struct RecordingView: View {
                     .padding(20)
                 }
                 .scrollContentBackground(.hidden)
-                .background(Color(.systemBackground))
+                .background(Color(uiColor: .systemBackground))
             }
             .navigationTitle("Record Meeting")
             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: selectedMeeting != nil)
@@ -499,7 +499,7 @@ struct MeetingSidebar: View {
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
         }
-        .background(Color(.secondarySystemBackground))
+        .background(Color(uiColor: .secondarySystemBackground))
         .onAppear {
             if calendarService.authorizationStatus == .fullAccess {
                 Task {

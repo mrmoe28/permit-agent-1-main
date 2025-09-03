@@ -51,7 +51,7 @@ struct MeetingPickerView: View {
                 }
             }
             .listStyle(.sidebar)
-            .background(Color(.systemBackground))
+            .background(Color(uiColor: .systemBackground))
             .scrollContentBackground(.hidden)
             .navigationTitle("Select Meeting")
             
@@ -163,7 +163,7 @@ struct CustomMeetingView: View {
                             }
                         }
                         .padding()
-                        .background(Color(.secondarySystemBackground))
+                        .background(Color(uiColor: .secondarySystemBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         
                         // Action buttons
@@ -197,7 +197,7 @@ struct CustomMeetingView: View {
                     }
                     .padding()
                 }
-                .background(Color(.systemBackground))
+                .background(Color(uiColor: .systemBackground))
             }
             .frame(width: 600, height: 500)
             .presentationDetents([.height(500)])
