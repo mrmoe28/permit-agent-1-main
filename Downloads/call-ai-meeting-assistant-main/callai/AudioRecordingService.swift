@@ -32,7 +32,7 @@ class AudioRecordingService: NSObject, ObservableObject {
     func checkRecordingPermission() {
         #if os(iOS)
         if #available(iOS 17.0, *) {
-            switch AVAudioApplication.recordPermission {
+            switch AVAudioApplication.shared.recordPermission {
             case .granted:
                 authorizationStatus = .granted
             case .denied:

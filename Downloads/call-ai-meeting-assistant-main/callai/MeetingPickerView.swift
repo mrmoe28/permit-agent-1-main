@@ -51,7 +51,7 @@ struct MeetingPickerView: View {
                 }
             }
             .listStyle(.sidebar)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(.regularMaterial)
             .scrollContentBackground(.hidden)
             .navigationTitle("Select Meeting")
             
@@ -124,6 +124,7 @@ struct CustomMeetingView: View {
                             participants: []
                         )
                         onSave(meeting)
+                        dismiss()
                     }
                     .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .buttonStyle(.borderedProminent)
@@ -229,7 +230,7 @@ struct CustomMeetingView: View {
                     }
                     .padding()
                 }
-                .background(Color(nsColor: .controlBackgroundColor))
+                .background(.regularMaterial)
     }
 }
 

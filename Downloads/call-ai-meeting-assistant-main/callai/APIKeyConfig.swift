@@ -7,19 +7,23 @@ class APIKeyConfig {
     private init() {}
     
     func getAPIKey() -> String {
-        // Return empty string - user must provide their own API key
+        // Read from environment variable set in Xcode scheme
+        if let envKey = ProcessInfo.processInfo.environment["openai_api_key"], !envKey.isEmpty {
+            return envKey
+        }
+        
+        // Fallback to empty string
         return ""
     }
     
     // Automatically initialize the keychain with the baked-in key
     func initializeKeychainIfNeeded() {
         // Only set if no key exists in keychain
-        // No longer auto-initializing - user must provide their own key
-        // if KeychainManager.shared.openAIAPIKey == nil {
-        //     let apiKey = getAPIKey()
-        //     if !apiKey.isEmpty {
-        //         KeychainManager.shared.openAIAPIKey = apiKey
-        //     }
-        // }
+        if KeychainManager.shared.openAIAPIKey == nil {
+            let apiKey = getAPIKey()
+            if !apiKey.isEmpty {
+                KeychainManager.shared.openAIAPIKey = apiKey
+            }
+        }
     }
 }

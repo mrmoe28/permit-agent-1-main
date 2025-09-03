@@ -5,17 +5,21 @@ struct RecordingView: View {
     @StateObject private var audioService = AudioRecordingService()
     @StateObject private var transcriptionService = TranscriptionService()
     @StateObject private var summaryService = AISummaryService()
+    @StateObject private var meetingSelectionManager = MeetingSelectionManager.shared
     @Environment(\.modelContext) private var modelContext
     
     @State private var selectedMeeting: Meeting?
     @State private var currentRecordingURL: URL?
     @State private var showingTranscriptionView = false
     
+    // Binding to parent tab selection to enable auto-navigation
+    @Binding var selectedTab: Int
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Meeting picker at the top
-                MeetingSidebar(selectedMeeting: $selectedMeeting)
+                MeetingSidebar(selectedMeeting: $selectedMeeting, selectedTab: $selectedTab)
                     .frame(height: 120)
                     .background(Color.secondary.opacity(0.1))
                 
@@ -66,25 +70,22 @@ struct RecordingView: View {
                     .padding(20)
                 }
                 .scrollContentBackground(.hidden)
-                .background(Color(nsColor: .controlBackgroundColor))
+                .background(.regularMaterial)
             }
             .navigationTitle("Record Meeting")
             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: selectedMeeting != nil)
             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: checkRecordingPermission())
-            .sheet(isPresented: $showingTranscriptionView) {
-                if let meeting = selectedMeeting {
-                    TranscriptionProcessingView(
-                        meeting: meeting,
-                        audioURL: currentRecordingURL
-                    )
-                }
-            }
             .onAppear {
                 // Request microphone permission on appear
                 if audioService.authorizationStatus == RecordingPermissionStatus.undetermined {
                     Task {
                         await audioService.requestRecordingPermission()
                     }
+                }
+                
+                // Check for pending meeting from another tab
+                if let pendingMeeting = meetingSelectionManager.consumePendingMeeting() {
+                    selectedMeeting = pendingMeeting
                 }
             }
         }
@@ -121,8 +122,59 @@ struct RecordingView: View {
             // Save the meeting with recording URL
             try? modelContext.save()
             
-            // Show transcription processing view
-            showingTranscriptionView = true
+            // Automatically navigate to Transcripts tab instead of showing modal
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                selectedTab = 2 // Navigate to Transcripts tab
+            }
+            
+            // Start background transcription processing
+            Task {
+                await startBackgroundTranscription(for: meeting, audioURL: recordingURL)
+            }
+        }
+    }
+    
+    private func startBackgroundTranscription(for meeting: Meeting, audioURL: URL) async {
+        // Check if we have a valid API key for AI features
+        guard AppConfig.shared.hasValidOpenAIAPIKey else {
+            print("OpenAI API key not configured")
+            return
+        }
+        
+        // Start transcription in background
+        let transcript = await transcriptionService.transcribeAudio(from: audioURL, for: meeting)
+        
+        guard let transcript = transcript else {
+            print("Transcription failed: \(transcriptionService.errorMessage ?? "Unknown error")")
+            return
+        }
+        
+        await MainActor.run {
+            modelContext.insert(transcript)
+            do {
+                try modelContext.save()
+            } catch {
+                print("Failed to save transcript: \(error.localizedDescription)")
+                return
+            }
+        }
+        
+        // Generate summary
+        let summaryService = AISummaryService(apiKey: AppConfig.shared.openAIAPIKey)
+        await summaryService.generateSummary(for: transcript)
+        
+        await MainActor.run {
+            if let errorMsg = summaryService.errorMessage {
+                print("Summary generation failed: \(errorMsg)")
+                return
+            }
+            
+            do {
+                try modelContext.save()
+                print("Transcription and summary completed successfully")
+            } catch {
+                print("Failed to save summary: \(error.localizedDescription)")
+            }
         }
     }
 }
@@ -399,11 +451,13 @@ struct ModernPermissionBanner: View {
 
 struct MeetingSidebar: View {
     @Binding var selectedMeeting: Meeting?
+    @Binding var selectedTab: Int
     @StateObject private var calendarService = CalendarService()
     @State private var showingCustomMeeting = false
     @State private var customMeetingTitle = ""
     @State private var customMeetingDate = Date()
     @State private var customMeetingDuration = 60.0
+    @Environment(\.modelContext) private var modelContext
     
     private var meetingSelectorHeader: some View {
         VStack(spacing: 16) {
@@ -523,7 +577,18 @@ struct MeetingSidebar: View {
                 date: $customMeetingDate,
                 duration: $customMeetingDuration
             ) { meeting in
+                // Save the meeting to the database
+                modelContext.insert(meeting)
+                try? modelContext.save()
+                
+                // Select the meeting for recording
                 selectedMeeting = meeting
+                
+                // Clear form fields and dismiss sheet
+                customMeetingTitle = ""
+                customMeetingDate = Date()
+                customMeetingDuration = 60.0
+                showingCustomMeeting = false
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .presentationDetents([.height(500)])
@@ -533,6 +598,6 @@ struct MeetingSidebar: View {
 }
 
 #Preview {
-    RecordingView()
+    RecordingView(selectedTab: .constant(1))
         .modelContainer(for: [Meeting.self, Transcript.self])
 }

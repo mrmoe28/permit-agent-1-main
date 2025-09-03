@@ -44,7 +44,7 @@ struct TranscriptRowView: View {
             }
             
             if let summary = transcript.summary, !summary.isEmpty {
-                Text(summary)
+                Text(cleanSummaryText(summary))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
@@ -153,7 +153,7 @@ struct SummarySection: View {
             
             if showingSummary {
                 if let summary = transcript.summary, !summary.isEmpty {
-                    Text(summary)
+                    Text(cleanSummaryText(summary))
                         .font(.body)
                 }
                 
@@ -246,6 +246,42 @@ struct GenerateSummarySection: View {
         .background(Color.gray.opacity(0.1))
         .cornerRadius(12)
     }
+}
+
+// Helper function to clean up summary text in case raw JSON is stored
+private func cleanSummaryText(_ text: String) -> String {
+    // Check if the text looks like JSON
+    if text.hasPrefix("{") && text.hasSuffix("}") {
+        // Try to parse and extract just the summary field
+        if let data = text.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let summary = json["summary"] as? String {
+            return summary
+        }
+        // If parsing fails, try to extract readable text
+        return extractReadableText(from: text)
+    }
+    
+    return text
+}
+
+private func extractReadableText(from jsonString: String) -> String {
+    // Remove JSON formatting and extract readable content
+    let cleaned = jsonString
+        .replacingOccurrences(of: "\"summary\":", with: "")
+        .replacingOccurrences(of: "\"keyPoints\":", with: "")
+        .replacingOccurrences(of: "\"actionItems\":", with: "")
+        .replacingOccurrences(of: "\"participants\":", with: "")
+        .replacingOccurrences(of: "[\"", with: "")
+        .replacingOccurrences(of: "\"]", with: "")
+        .replacingOccurrences(of: "\",\"", with: ", ")
+        .replacingOccurrences(of: "\"", with: "")
+        .replacingOccurrences(of: "{", with: "")
+        .replacingOccurrences(of: "}", with: "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    
+    // Take only the first part (should be the summary)
+    return cleaned.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? cleaned
 }
 
 #Preview {

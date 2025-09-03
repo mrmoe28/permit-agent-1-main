@@ -7,14 +7,14 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            MeetingsListView()
+            MeetingsListView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "calendar")
                     Text("Meetings")
                 }
                 .tag(0)
             
-            RecordingView()
+            RecordingView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "record.circle")
                     Text("Record")
