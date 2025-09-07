@@ -68,7 +68,7 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile: _profile }) {
       if (account?.provider === 'google') {
         try {
           // Check if user exists or create new user
