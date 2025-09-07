@@ -1,0 +1,4 @@
+
+# Trigger Vercel deploy on push
+echo "Triggering Vercel deploy hook..."
+curl -sS -X POST "https://api.vercel.com/v1/integrations/deploy/prj_3HrsCfwM8vNwFahwWMPcSnAnPpxq/zx1Mi4flvz" -H "Content-Type: application/json" -d {source:git-pre-push} >/dev/null && echo "Deploy hook triggered."
