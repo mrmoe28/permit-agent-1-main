@@ -185,6 +185,7 @@ struct AppHaptic {
         #endif
     }
     
+    @MainActor
     static func impact(_ style: ImpactStyle = .medium) {
         #if canImport(UIKit)
         let impactFeedback = UIImpactFeedbackGenerator(style: style.uiKitStyle)
@@ -192,6 +193,7 @@ struct AppHaptic {
         #endif
     }
     
+    @MainActor
     static func selection() {
         #if canImport(UIKit)
         let selectionFeedback = UISelectionFeedbackGenerator()
@@ -199,6 +201,7 @@ struct AppHaptic {
         #endif
     }
     
+    @MainActor
     static func notification(_ type: NotificationType) {
         #if canImport(UIKit)
         let notificationFeedback = UINotificationFeedbackGenerator()
@@ -223,7 +226,6 @@ extension View {
     
     /// Smart text truncation based on Dynamic Type size
     func smartTruncation(for sizeCategory: ContentSizeCategory, baseLength: Int = 50) -> some View {
-        let maxLength = AppFont.truncationLength(for: sizeCategory, base: baseLength)
         return self.lineLimit(AppFont.lineLimit(for: sizeCategory))
     }
     
@@ -273,7 +275,7 @@ struct ReducedMotionModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .animation(reduceMotion ? .none : AppAnimation.microInteraction)
+            .animation(reduceMotion ? .none : AppAnimation.microInteraction, value: reduceMotion)
     }
 }
 
@@ -298,7 +300,9 @@ class AccessibilityManager: ObservableObject {
     @Published var differentiateWithoutColor = false
     
     init() {
-        updateAccessibilitySettings()
+        Task { @MainActor in
+            updateAccessibilitySettings()
+        }
         
         // Listen for accessibility changes
         #if canImport(UIKit)
@@ -306,20 +310,25 @@ class AccessibilityManager: ObservableObject {
             forName: UIAccessibility.voiceOverStatusDidChangeNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            self.updateAccessibilitySettings()
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.updateAccessibilitySettings()
+            }
         }
         
         NotificationCenter.default.addObserver(
             forName: UIAccessibility.reduceMotionStatusDidChangeNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            self.updateAccessibilitySettings()
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.updateAccessibilitySettings()
+            }
         }
         #endif
     }
     
+    @MainActor
     private func updateAccessibilitySettings() {
         #if canImport(UIKit)
         isVoiceOverRunning = UIAccessibility.isVoiceOverRunning

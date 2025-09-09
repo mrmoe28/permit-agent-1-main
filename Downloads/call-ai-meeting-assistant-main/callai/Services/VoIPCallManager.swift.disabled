@@ -1,0 +1,294 @@
+import Foundation
+import CallKit
+import AVFoundation
+import Combine
+import UIKit
+
+@MainActor
+class VoIPCallManager: NSObject, ObservableObject {
+    static let shared = VoIPCallManager()
+    
+    @Published var isCallActive = false
+    @Published var isRecording = false
+    @Published var callDuration: TimeInterval = 0
+    @Published var currentCall: VoIPCall?
+    
+    private let callController = CXCallController()
+    private let provider: CXProvider
+    private var callTimer: Timer?
+    private var audioRecorder: AVAudioRecorder?
+    var recordingURL: URL?
+    
+    override init() {
+        let configuration = CXProviderConfiguration()
+        // Note: localizedName is set automatically from the app's display name
+        configuration.supportsVideo = false
+        configuration.maximumCallGroups = 1
+        configuration.maximumCallsPerCallGroup = 1
+        configuration.supportedHandleTypes = [.phoneNumber]
+        configuration.iconTemplateImageData = UIImage(systemName: "phone.fill")?.pngData()
+        
+        self.provider = CXProvider(configuration: configuration)
+        super.init()
+        
+        provider.setDelegate(self, queue: nil)
+    }
+    
+    // MARK: - Call Management
+    
+    func startOutgoingCall(to phoneNumber: String, participantName: String? = nil) {
+        let handle = CXHandle(type: .phoneNumber, value: phoneNumber)
+        let startCallAction = CXStartCallAction(call: UUID(), handle: handle)
+        startCallAction.isVideo = false
+        
+        let transaction = CXTransaction(action: startCallAction)
+        
+        callController.request(transaction) { [weak self] error in
+            if let error = error {
+                print("Failed to start call: \(error)")
+            } else {
+                DispatchQueue.main.async {
+                    self?.currentCall = VoIPCall(
+                        id: startCallAction.callUUID,
+                        phoneNumber: phoneNumber,
+                        participantName: participantName,
+                        direction: CallDirection.outgoing,
+                        startTime: Date()
+                    )
+                }
+            }
+        }
+    }
+    
+    func endCall() {
+        guard let call = currentCall else { return }
+        
+        let endCallAction = CXEndCallAction(call: call.id)
+        let transaction = CXTransaction(action: endCallAction)
+        
+        callController.request(transaction) { [weak self] error in
+            if let error = error {
+                print("Failed to end call: \(error)")
+            } else {
+                DispatchQueue.main.async {
+                    self?.stopRecording()
+                    self?.isCallActive = false
+                    self?.currentCall = nil
+                    self?.callDuration = 0
+                    self?.stopCallTimer()
+                }
+            }
+        }
+    }
+    
+    func answerCall() {
+        guard let call = currentCall else { return }
+        
+        let answerCallAction = CXAnswerCallAction(call: call.id)
+        let transaction = CXTransaction(action: answerCallAction)
+        
+        callController.request(transaction) { [weak self] error in
+            if let error = error {
+                print("Failed to answer call: \(error)")
+            } else {
+                DispatchQueue.main.async {
+                    self?.isCallActive = true
+                    self?.startCallTimer()
+                }
+            }
+        }
+    }
+    
+    func declineCall() {
+        guard let call = currentCall else { return }
+        
+        let endCallAction = CXEndCallAction(call: call.id)
+        let transaction = CXTransaction(action: endCallAction)
+        
+        callController.request(transaction) { [weak self] error in
+            if let error = error {
+                print("Failed to decline call: \(error)")
+            } else {
+                DispatchQueue.main.async {
+                    self?.currentCall = nil
+                    self?.isCallActive = false
+                }
+            }
+        }
+    }
+    
+    // MARK: - Recording Management
+    
+    func startRecording() async -> Bool {
+        guard isCallActive, !isRecording else { return false }
+        
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .defaultToSpeaker])
+            try audioSession.setActive(true)
+            
+            guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                print("Failed to access documents directory")
+                return false
+            }
+            let fileName = "voip_call_\(Date().timeIntervalSince1970).m4a"
+            recordingURL = documentsPath.appendingPathComponent(fileName)
+            
+            guard let url = recordingURL else { return false }
+            
+            let settings: [String: Any] = [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: 44100,
+                AVNumberOfChannelsKey: 2,
+                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            ]
+            
+            audioRecorder = try AVAudioRecorder(url: url, settings: settings)
+            audioRecorder?.delegate = self
+            audioRecorder?.isMeteringEnabled = true
+            
+            let success = audioRecorder?.record() ?? false
+            if success {
+                isRecording = true
+                print("Started recording VoIP call to: \(url.path)")
+            }
+            
+            return success
+        } catch {
+            print("Failed to start recording: \(error)")
+            return false
+        }
+    }
+    
+    func stopRecording() {
+        guard isRecording else { return }
+        
+        audioRecorder?.stop()
+        audioRecorder = nil
+        isRecording = false
+        
+        print("Stopped recording VoIP call")
+    }
+    
+    // MARK: - Timer Management
+    
+    private func startCallTimer() {
+        callTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.callDuration += 1.0
+            }
+        }
+    }
+    
+    private func stopCallTimer() {
+        callTimer?.invalidate()
+        callTimer = nil
+    }
+    
+    // MARK: - Call Duration Formatting
+    
+    func formattedDuration() -> String {
+        let minutes = Int(callDuration) / 60
+        let seconds = Int(callDuration) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+// MARK: - CXProviderDelegate
+
+extension VoIPCallManager: CXProviderDelegate {
+    nonisolated func providerDidReset(_ provider: CXProvider) {
+        DispatchQueue.main.async {
+            self.isCallActive = false
+            self.currentCall = nil
+            self.stopRecording()
+            self.stopCallTimer()
+        }
+    }
+    
+    nonisolated func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
+        DispatchQueue.main.async {
+            self.isCallActive = true
+            self.startCallTimer()
+        }
+        action.fulfill()
+    }
+    
+    nonisolated func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
+        DispatchQueue.main.async {
+            self.isCallActive = true
+            self.startCallTimer()
+        }
+        action.fulfill()
+    }
+    
+    nonisolated func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
+        DispatchQueue.main.async {
+            self.isCallActive = false
+            self.currentCall = nil
+            self.stopRecording()
+            self.stopCallTimer()
+        }
+        action.fulfill()
+    }
+    
+    nonisolated func provider(_ provider: CXProvider, perform action: CXSetHeldCallAction) {
+        action.fulfill()
+    }
+    
+    nonisolated func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
+        action.fulfill()
+    }
+}
+
+// MARK: - AVAudioRecorderDelegate
+
+extension VoIPCallManager: AVAudioRecorderDelegate {
+    nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        DispatchQueue.main.async {
+            self.isRecording = false
+            if flag {
+                print("Recording completed successfully")
+            } else {
+                print("Recording failed")
+            }
+        }
+    }
+    
+    nonisolated func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+        DispatchQueue.main.async {
+            self.isRecording = false
+            if let error = error {
+                print("Recording error: \(error)")
+            }
+        }
+    }
+}
+
+// MARK: - VoIPCall Model
+
+struct VoIPCall: Identifiable {
+    let id: UUID
+    let phoneNumber: String
+    let participantName: String?
+    let direction: CallDirection
+    let startTime: Date
+    
+    var displayName: String {
+        return participantName ?? phoneNumber
+    }
+    
+    var callIcon: String {
+        switch direction {
+        case .incoming:
+            return "phone.arrow.down.left"
+        case .outgoing:
+            return "phone.arrow.up.right"
+        case .unknown:
+            return "phone"
+        case .missed:
+            return "phone.badge.plus"
+        }
+    }
+}
+

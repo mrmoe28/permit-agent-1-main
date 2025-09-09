@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import SwiftData
 
 @MainActor
 class WhisperService: ObservableObject {
@@ -14,14 +15,14 @@ class WhisperService: ObservableObject {
         self.apiKey = apiKey
     }
     
-    func transcribeAudio(from url: URL, for meeting: Meeting) async -> Transcript? {
+    func transcribeAudio(from url: URL, for meeting: Meeting, modelContext: ModelContext) async -> Transcript? {
         guard !apiKey.isEmpty else {
-            errorMessage = "OpenAI API key not configured"
+            errorMessage = ServiceError.invalidAPIKey.errorDescription
             return nil
         }
         
         guard FileManager.default.fileExists(atPath: url.path) else {
-            errorMessage = "Audio file not found"
+            errorMessage = ServiceError.fileNotFound(url.path).errorDescription
             return nil
         }
         
@@ -36,7 +37,11 @@ class WhisperService: ObservableObject {
             
             // Create multipart form data
             let boundary = UUID().uuidString
-            var request = URLRequest(url: URL(string: baseURL)!)
+            guard let url = URL(string: baseURL) else {
+                errorMessage = ServiceError.invalidURL(baseURL).errorDescription
+                return nil
+            }
+            var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -44,34 +49,62 @@ class WhisperService: ObservableObject {
             var body = Data()
             
             // Add model parameter
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-            body.append("whisper-1\r\n".data(using: .utf8)!)
+            guard let boundaryData = "--\(boundary)\r\n".data(using: .utf8),
+                  let modelDisposition = "Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8),
+                  let modelValue = "whisper-1\r\n".data(using: .utf8) else {
+                errorMessage = ServiceError.audioProcessingFailed("Failed to create form data").errorDescription
+                return nil
+            }
+            body.append(boundaryData)
+            body.append(modelDisposition)
+            body.append(modelValue)
             
             // Add language parameter (optional, helps with accuracy)
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
-            body.append("en\r\n".data(using: .utf8)!)
+            guard let languageDisposition = "Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8),
+                  let languageValue = "en\r\n".data(using: .utf8) else {
+                errorMessage = "Failed to create language form data"
+                return nil
+            }
+            body.append(boundaryData)
+            body.append(languageDisposition)
+            body.append(languageValue)
             
             // Add response format parameter
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n".data(using: .utf8)!)
-            body.append("verbose_json\r\n".data(using: .utf8)!)
+            guard let formatDisposition = "Content-Disposition: form-data; name=\"response_format\"\r\n\r\n".data(using: .utf8),
+                  let formatValue = "verbose_json\r\n".data(using: .utf8) else {
+                errorMessage = "Failed to create format form data"
+                return nil
+            }
+            body.append(boundaryData)
+            body.append(formatDisposition)
+            body.append(formatValue)
             
             // Add timestamp granularities for better processing
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"timestamp_granularities[]\"\r\n\r\n".data(using: .utf8)!)
-            body.append("word\r\n".data(using: .utf8)!)
+            guard let granularityDisposition = "Content-Disposition: form-data; name=\"timestamp_granularities[]\"\r\n\r\n".data(using: .utf8),
+                  let granularityValue = "word\r\n".data(using: .utf8) else {
+                errorMessage = "Failed to create granularity form data"
+                return nil
+            }
+            body.append(boundaryData)
+            body.append(granularityDisposition)
+            body.append(granularityValue)
             
             // Add audio file
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(url.lastPathComponent)\"\r\n".data(using: .utf8)!)
-            body.append("Content-Type: audio/m4a\r\n\r\n".data(using: .utf8)!)
+            guard let fileDisposition = "Content-Disposition: form-data; name=\"file\"; filename=\"\(url.lastPathComponent)\"\r\n".data(using: .utf8),
+                  let contentType = "Content-Type: audio/m4a\r\n\r\n".data(using: .utf8),
+                  let newlineData = "\r\n".data(using: .utf8),
+                  let closeBoundary = "--\(boundary)--\r\n".data(using: .utf8) else {
+                errorMessage = "Failed to create file form data"
+                return nil
+            }
+            body.append(boundaryData)
+            body.append(fileDisposition)
+            body.append(contentType)
             body.append(audioData)
-            body.append("\r\n".data(using: .utf8)!)
+            body.append(newlineData)
             
             // Close multipart form
-            body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+            body.append(closeBoundary)
             
             request.httpBody = body
             transcriptionProgress = 0.6
@@ -106,30 +139,15 @@ class WhisperService: ObservableObject {
             transcriptionProgress = 1.0
             
             // Create transcript with enhanced data
+            // Create transcript using SwiftData context
             let transcript = Transcript(
                 content: text,
                 confidence: 0.95, // Whisper generally has high confidence
-                meeting: meeting
+                meetingID: meeting.id
             )
             
-            // Extract additional data if available
-            if let segments = responseJSON?["segments"] as? [[String: Any]] {
-                transcript.segments = segments.compactMap { segment in
-                    guard let start = segment["start"] as? Double,
-                          let end = segment["end"] as? Double,
-                          let text = segment["text"] as? String else { return nil }
-                    return TranscriptSegment(start: start, end: end, text: text.trimmingCharacters(in: .whitespacesAndNewlines))
-                }
-            }
-            
-            if let words = responseJSON?["words"] as? [[String: Any]] {
-                transcript.words = words.compactMap { word in
-                    guard let start = word["start"] as? Double,
-                          let end = word["end"] as? Double,
-                          let text = word["word"] as? String else { return nil }
-                    return TranscriptWord(start: start, end: end, word: text)
-                }
-            }
+            // Note: Additional segment and word data could be stored separately
+            // if needed for future features
             
             meeting.transcript = transcript
             meeting.updatedAt = Date()
@@ -157,7 +175,11 @@ class WhisperService: ObservableObject {
             let audioData = try Data(contentsOf: url)
             
             let boundary = UUID().uuidString
-            var request = URLRequest(url: URL(string: "https://api.openai.com/v1/audio/translations")!)
+            guard let translationURL = URL(string: "https://api.openai.com/v1/audio/translations") else {
+                errorMessage = "Invalid translation API URL"
+                return nil
+            }
+            var request = URLRequest(url: translationURL)
             request.httpMethod = "POST"
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -165,17 +187,30 @@ class WhisperService: ObservableObject {
             var body = Data()
             
             // Add model parameter
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-            body.append("whisper-1\r\n".data(using: .utf8)!)
+            guard let boundaryData = "--\(boundary)\r\n".data(using: .utf8),
+                  let modelDisposition = "Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8),
+                  let modelValue = "whisper-1\r\n".data(using: .utf8) else {
+                errorMessage = "Failed to create translation form data"
+                return nil
+            }
+            body.append(boundaryData)
+            body.append(modelDisposition)
+            body.append(modelValue)
             
             // Add audio file
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(url.lastPathComponent)\"\r\n".data(using: .utf8)!)
-            body.append("Content-Type: audio/m4a\r\n\r\n".data(using: .utf8)!)
+            guard let fileDisposition = "Content-Disposition: form-data; name=\"file\"; filename=\"\(url.lastPathComponent)\"\r\n".data(using: .utf8),
+                  let contentType = "Content-Type: audio/m4a\r\n\r\n".data(using: .utf8),
+                  let newlineData = "\r\n".data(using: .utf8),
+                  let closeBoundary = "--\(boundary)--\r\n".data(using: .utf8) else {
+                errorMessage = "Failed to create file form data for translation"
+                return nil
+            }
+            body.append(boundaryData)
+            body.append(fileDisposition)
+            body.append(contentType)
             body.append(audioData)
-            body.append("\r\n".data(using: .utf8)!)
-            body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+            body.append(newlineData)
+            body.append(closeBoundary)
             
             request.httpBody = body
             
@@ -197,14 +232,8 @@ class WhisperService: ObservableObject {
 }
 
 // Enhanced transcript data structures
-struct TranscriptSegment: Codable {
+struct WhisperTranscriptSegment: Codable {
     let start: Double
     let end: Double
     let text: String
-}
-
-struct TranscriptWord: Codable {
-    let start: Double
-    let end: Double
-    let word: String
 }

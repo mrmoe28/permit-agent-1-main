@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MeetingPickerView: View {
     @Binding var selectedMeeting: Meeting?
-    @StateObject private var calendarService = CalendarService()
+    @StateObject private var calendarService = CalendarServiceImpl()
     @Environment(\.dismiss) private var dismiss
     @State private var customMeetingTitle = ""
     @State private var customMeetingDate = Date()
@@ -65,7 +65,7 @@ struct MeetingPickerView: View {
             .onAppear {
                 if calendarService.authorizationStatus == .fullAccess {
                     Task {
-                        await calendarService.loadUpcomingMeetings()
+                        try await calendarService.loadUpcomingMeetings()
                     }
                 }
             }

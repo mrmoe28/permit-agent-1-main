@@ -5,17 +5,17 @@ struct TranscriptionProcessingView: View {
     let meeting: Meeting
     let audioURL: URL?
     
-    @StateObject private var transcriptionService = TranscriptionService()
-    @StateObject private var summaryService: AISummaryService = {
-        AISummaryService(apiKey: AppConfig.shared.openAIAPIKey)
-    }()
+    @StateObject private var transcriptionService = TranscriptionServiceImpl()
+    @StateObject private var summaryService = AISummaryServiceImpl()
+    private let storageService = StorageManager.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    @State private var currentStep: ProcessingStep = .transcribing
+    @State private var currentStep: ProcessingStep = .preparing
     @State private var generatedTranscript: Transcript?
     
     enum ProcessingStep {
+        case preparing
         case transcribing
         case generatingSummary
         case completed
@@ -29,8 +29,8 @@ struct TranscriptionProcessingView: View {
                 
                 ProcessingProgressView(
                     step: currentStep,
-                    transcriptionProgress: transcriptionService.transcriptionProgress,
-                    isGeneratingSummary: summaryService.isGeneratingSummary
+                    transcriptionProgress: transcriptionService.progress,
+                    isGeneratingSummary: summaryService.isGenerating
                 )
                 
                 if case .error(let message) = currentStep {
@@ -80,41 +80,41 @@ struct TranscriptionProcessingView: View {
         currentStep = .transcribing
         
         Task {
-            let transcript = await transcriptionService.transcribeAudio(from: audioURL, for: meeting)
-            
-            guard let transcript = transcript else {
+            do {
+                let transcript = try await transcriptionService.transcribe(audioURL: audioURL, for: meeting)
+                
                 await MainActor.run {
-                    let errorMsg = transcriptionService.errorMessage ?? "Transcription failed"
-                    currentStep = .error(errorMsg)
-                }
-                return
-            }
-            
-            await MainActor.run {
-                generatedTranscript = transcript
-                modelContext.insert(transcript)
-                do {
-                    try modelContext.save()
                     currentStep = .generatingSummary
-                } catch {
-                    currentStep = .error("Failed to save transcript: \(error.localizedDescription)")
-                    return
                 }
-            }
-            
-            await summaryService.generateSummary(for: transcript)
-            
-            await MainActor.run {
-                if let errorMsg = summaryService.errorMessage {
-                    currentStep = .error("Summary generation failed: \(errorMsg)")
+                
+                // Save transcript
+                do {
+                    try await storageService.saveTranscript(transcript)
+                } catch {
+                    await MainActor.run {
+                        currentStep = .error("Failed to save transcript: \(error.localizedDescription)")
+                    }
                     return
                 }
                 
                 do {
-                    try modelContext.save()
-                    currentStep = .completed
+                    _ = try await summaryService.generateSummary(for: transcript)
                 } catch {
-                    currentStep = .error("Failed to save summary: \(error.localizedDescription)")
+                    print("Failed to generate summary: \(error)")
+                }
+                
+                await MainActor.run {
+                    if let errorMsg = summaryService.errorMessage {
+                        currentStep = .error("Summary generation failed: \(errorMsg)")
+                        return
+                    }
+                    
+                    currentStep = .completed
+                }
+            } catch {
+                await MainActor.run {
+                    let errorMsg = transcriptionService.errorMessage ?? "Transcription failed"
+                    currentStep = .error(errorMsg)
                 }
             }
         }
@@ -144,6 +144,8 @@ struct ProcessingHeaderView: View {
     
     private var stepIcon: String {
         switch step {
+        case .preparing:
+            return "gear"
         case .transcribing:
             return "waveform.and.mic"
         case .generatingSummary:
@@ -157,6 +159,8 @@ struct ProcessingHeaderView: View {
     
     private var stepColor: Color {
         switch step {
+        case .preparing:
+            return .orange
         case .transcribing, .generatingSummary:
             return .blue
         case .completed:
@@ -168,6 +172,8 @@ struct ProcessingHeaderView: View {
     
     private var stepTitle: String {
         switch step {
+        case .preparing:
+            return "Preparing"
         case .transcribing:
             return "Transcribing Audio"
         case .generatingSummary:
@@ -181,6 +187,8 @@ struct ProcessingHeaderView: View {
     
     private var stepDescription: String {
         switch step {
+        case .preparing:
+            return "Setting up the processing pipeline"
         case .transcribing:
             return "Converting your recording to text using AI speech recognition"
         case .generatingSummary:
@@ -194,7 +202,7 @@ struct ProcessingHeaderView: View {
     
     private var isAnimating: Bool {
         switch step {
-        case .transcribing, .generatingSummary:
+        case .preparing, .transcribing, .generatingSummary:
             return true
         case .completed, .error:
             return false

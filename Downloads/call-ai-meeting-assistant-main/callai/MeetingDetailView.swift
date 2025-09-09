@@ -24,7 +24,7 @@ struct MeetingDetailView: View {
                 }
                 
                 if let transcript = meeting.transcript {
-                    NavigationLink(destination: TranscriptDetailView(transcript: transcript)) {
+                    NavigationLink(destination: Text(transcript.content)) {
                         TranscriptSummaryView(transcript: transcript)
                     }
                     .buttonStyle(.plain)
@@ -193,13 +193,15 @@ struct AudioPlayerView: View {
     }
     
     private func startTimer() {
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            playbackPosition = audioPlayer?.currentTime ?? 0
-            
-            if !(audioPlayer?.isPlaying ?? false) {
-                isPlaying = false
-                playbackTimer?.invalidate()
-                playbackTimer = nil
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { @Sendable _ in
+            Task { @MainActor in
+                playbackPosition = audioPlayer?.currentTime ?? 0
+                
+                if !(audioPlayer?.isPlaying ?? false) {
+                    isPlaying = false
+                    playbackTimer?.invalidate()
+                    playbackTimer = nil
+                }
             }
         }
     }

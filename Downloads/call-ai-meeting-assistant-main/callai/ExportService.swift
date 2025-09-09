@@ -92,7 +92,10 @@ class ExportService: ObservableObject {
     }
     
     private func generateContent(for transcript: Transcript, format: ExportFormat) -> String {
-        let meeting = transcript.meeting!
+        guard let meeting = transcript.meeting else {
+            errorMessage = "No meeting associated with transcript"
+            return ""
+        }
         
         switch format {
         case .text:

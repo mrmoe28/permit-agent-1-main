@@ -1,0 +1,323 @@
+import SwiftUI
+import AVFoundation
+
+struct LiveCallRecordingView: View {
+    @StateObject private var callManager = VoIPCallManager.shared
+    @ObservedObject private var contactsService = ContactsService.shared
+    @State private var phoneNumber = ""
+    @State private var participantName = ""
+    @State private var showCallForm = false
+    @State private var showCallInProgress = false
+    @State private var showContactPicker = false
+    @State private var selectedContact: ContactsService.ContactInfo?
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Header
+                VStack(spacing: 8) {
+                    Image(systemName: "phone.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.blue)
+                    
+                    Text("Live Call Recording")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Text("Record calls made through CallAI")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, 20)
+                
+                Spacer()
+                
+                // Call Status
+                if callManager.isCallActive {
+                    callInProgressView
+                } else {
+                    callSetupView
+                }
+                
+                Spacer()
+                
+                // Quick Actions
+                VStack(spacing: 12) {
+                    Button(action: {
+                        print("🔵 Start New Call button tapped")
+                        showCallForm = true
+                    }) {
+                        HStack {
+                            Image(systemName: "phone.fill")
+                            Text("Start New Call")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .cornerRadius(12)
+                    }
+                    .disabled(callManager.isCallActive)
+                    
+                    if callManager.isCallActive {
+                        Button(action: {
+                            callManager.endCall()
+                        }) {
+                            HStack {
+                                Image(systemName: "phone.down.fill")
+                                Text("End Call")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red)
+                            .cornerRadius(12)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+            .navigationTitle("Live Recording")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .sheet(isPresented: $showCallForm) {
+            NavigationView {
+                CallSetupView(
+                    phoneNumber: $phoneNumber,
+                    participantName: $participantName,
+                    contactsService: contactsService,
+                    selectedContact: $selectedContact,
+                    onStartCall: { number, name in
+                        print("🔵 Starting call to: \(number), name: \(name)")
+                        callManager.startOutgoingCall(to: number, participantName: name)
+                        showCallForm = false
+                    }
+                )
+            }
+        }
+    }
+    
+    private var callInProgressView: some View {
+        VStack(spacing: 16) {
+            // Call Info
+            VStack(spacing: 8) {
+                if let call = callManager.currentCall {
+                    Text(call.displayName)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text(call.phoneNumber)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    // Show contact info if available
+                    if let contact = contactsService.findContact(by: call.phoneNumber) {
+                        HStack {
+                            Image(systemName: "person.crop.circle.fill")
+                                .foregroundColor(.blue)
+                            Text(contact.displayName)
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.top, 4)
+                    }
+                }
+                
+                Text(callManager.formattedDuration())
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.blue)
+            }
+            
+            // Recording Controls
+            VStack(spacing: 12) {
+                if callManager.isRecording {
+                    HStack {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 12, height: 12)
+                            .scaleEffect(1.2)
+                            .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: callManager.isRecording)
+                        
+                        Text("Recording...")
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                    }
+                }
+                
+                Button(action: {
+                    if callManager.isRecording {
+                        callManager.stopRecording()
+                    } else {
+                        Task {
+                            await callManager.startRecording()
+                        }
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: callManager.isRecording ? "stop.circle.fill" : "record.circle")
+                        Text(callManager.isRecording ? "Stop Recording" : "Start Recording")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(callManager.isRecording ? Color.red : Color.green)
+                    .cornerRadius(12)
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+        .padding(.horizontal, 20)
+    }
+    
+    private var callSetupView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "phone.circle")
+                .font(.system(size: 80))
+                .foregroundColor(.gray)
+            
+            Text("No Active Call")
+                .font(.title3)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+            
+            Text("Tap 'Start New Call' to begin a recorded call")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+    }
+}
+
+struct CallSetupView: View {
+    @Binding var phoneNumber: String
+    @Binding var participantName: String
+    @ObservedObject var contactsService: ContactsService
+    @Binding var selectedContact: ContactsService.ContactInfo?
+    let onStartCall: (String, String) -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var showContactPicker = false
+    
+    var body: some View {
+        Form {
+                Section("Call Details") {
+                    // Contact Selection
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            // Automatically request contacts permission when user tries to access contacts
+                            Task {
+                                let hasAccess = await contactsService.ensureAccess()
+                                if hasAccess {
+                                    showContactPicker = true
+                                }
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "person.crop.circle")
+                                    .foregroundColor(.blue)
+                                
+                                if let contact = selectedContact {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(contact.displayName)
+                                            .foregroundColor(.primary)
+                                        if let phone = contact.primaryPhoneNumber {
+                                            Text(contact.formattedPhoneNumbers.first ?? phone)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                } else {
+                                    Text("Select from Contacts")
+                                        .foregroundColor(.blue)
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Manual Entry Option
+                        Button(action: {
+                            selectedContact = nil
+                            phoneNumber = ""
+                            participantName = ""
+                        }) {
+                            HStack {
+                                Image(systemName: "pencil")
+                                    .foregroundColor(.orange)
+                                
+                                Text("Enter Manually Instead")
+                                    .foregroundColor(.orange)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
+                    // Manual Entry
+                    TextField("Phone Number", text: $phoneNumber)
+                        .keyboardType(.phonePad)
+                        .textContentType(.telephoneNumber)
+                        .onChange(of: selectedContact) { _, newContact in
+                            if let contact = newContact {
+                                phoneNumber = contact.primaryPhoneNumber ?? ""
+                                participantName = contact.name
+                            }
+                        }
+                    
+                    TextField("Participant Name (Optional)", text: $participantName)
+                        .textContentType(.name)
+                }
+                
+                Section("Note") {
+                    Text("This will initiate a VoIP call through CallAI. The call can be recorded and will appear in your meetings list.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .navigationTitle("New Call")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Start Call") {
+                        onStartCall(phoneNumber, participantName)
+                    }
+                    .disabled(phoneNumber.isEmpty)
+                }
+        }
+        .sheet(isPresented: $showContactPicker) {
+            ContactPickerView(
+                contactsService: contactsService,
+                selectedContact: $selectedContact
+            )
+        }
+    }
+}
+
+#Preview {
+    LiveCallRecordingView()
+}

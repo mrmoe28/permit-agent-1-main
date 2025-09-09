@@ -21,14 +21,14 @@ struct ContentView: View {
                 }
                 .tag(1)
             
-            TranscriptsView()
+            TranscriptsView(onBackToLanding: {})
                 .tabItem {
                     Image(systemName: "doc.text")
                     Text("Transcripts")
                 }
                 .tag(2)
             
-            SettingsView()
+            SettingsView(prefersDarkMode: .constant(false), onBackToLanding: {})
                 .tabItem {
                     Image(systemName: "gear")
                     Text("Settings")

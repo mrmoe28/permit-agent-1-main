@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 class AppConfig {
     static let shared = AppConfig()
     
@@ -39,8 +40,8 @@ class AppConfig {
 
 extension AppConfig {
     @MainActor
-    func createAISummaryService() -> AISummaryService {
-        return AISummaryService(apiKey: openAIAPIKey)
+    func createAISummaryService() -> any AISummaryService {
+        return AISummaryServiceImpl()
     }
     
     @MainActor
@@ -55,8 +56,8 @@ extension AppConfig {
     
     @MainActor
     func createMeetingDetectionService(
-        calendarService: CalendarService,
-        audioService: AudioRecordingService
+        calendarService: any CalendarService,
+        audioService: any AudioRecordingService
     ) -> MeetingDetectionService {
         return MeetingDetectionService(
             calendarService: calendarService,

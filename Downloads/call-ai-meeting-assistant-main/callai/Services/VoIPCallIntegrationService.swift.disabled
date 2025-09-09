@@ -1,0 +1,151 @@
+import Foundation
+import SwiftData
+import AVFoundation
+import Combine
+
+@MainActor
+class VoIPCallIntegrationService: ObservableObject {
+    static let shared = VoIPCallIntegrationService()
+    
+    private let callManager = VoIPCallManager.shared
+    private var modelContext: ModelContext?
+    
+    @Published var isProcessingCall = false
+    
+    private init() {
+        setupCallManagerObserver()
+    }
+    
+    func setModelContext(_ context: ModelContext) {
+        self.modelContext = context
+    }
+    
+    private func setupCallManagerObserver() {
+        // Observe call state changes
+        callManager.$isCallActive
+            .sink { [weak self] isActive in
+                if !isActive && self?.callManager.currentCall != nil {
+                    // Call ended, process the recording
+                    Task {
+                        await self?.processCompletedCall()
+                    }
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private var cancellables = Set<AnyCancellable>()
+    
+    // MARK: - Call Processing
+    
+    private func processCompletedCall() async {
+        guard let call = callManager.currentCall,
+              let context = modelContext else { return }
+        
+        isProcessingCall = true
+        
+        do {
+            // Create a new meeting from the VoIP call
+            let meeting = Meeting(
+                title: "Call with \(call.displayName)",
+                startDate: call.startTime,
+                endDate: Date(),
+                location: nil,
+                calendarEventID: nil,
+                participants: call.participantName != nil ? [call.participantName!] : []
+            )
+            
+            // Set call-specific properties
+            meeting.isPhoneCall = true
+            meeting.phoneNumber = call.phoneNumber
+            meeting.participantName = call.participantName
+            meeting.callType = .voice
+            meeting.callDirection = call.direction
+            meeting.consentGiven = true
+            meeting.consentDate = Date()
+            
+            // Set recording URL if available
+            if let recordingURL = callManager.recordingURL {
+                meeting.recordingURL = recordingURL
+                meeting.storedDuration = callManager.callDuration
+            }
+            
+            // Add notes about the call
+            meeting.notes = "VoIP call recorded through CallAI. Duration: \(callManager.formattedDuration())"
+            
+            // Save to context
+            context.insert(meeting)
+            try context.save()
+            
+            print("Successfully saved VoIP call as meeting: \(meeting.title)")
+            
+            // Start transcription if recording exists
+            if let recordingURL = callManager.recordingURL {
+                await startTranscription(for: meeting, recordingURL: recordingURL)
+            }
+            
+        } catch {
+            print("Failed to save VoIP call: \(error)")
+        }
+        
+        isProcessingCall = false
+    }
+    
+    private func startTranscription(for meeting: Meeting, recordingURL: URL) async {
+        do {
+            let transcriptionService = TranscriptionService()
+            let transcript = await transcriptionService.transcribeAudio(from: recordingURL, for: meeting)
+            
+            // Link transcript to meeting
+            transcript?.meeting = meeting
+            meeting.transcript = transcript
+            
+            // Save updated meeting with transcript
+            try modelContext?.save()
+            
+            print("Successfully transcribed VoIP call: \(meeting.title)")
+            
+        } catch {
+            print("Failed to transcribe VoIP call: \(error)")
+        }
+    }
+    
+    // MARK: - Public Methods
+    
+    func startCallWithRecording(to phoneNumber: String, participantName: String? = nil) {
+        callManager.startOutgoingCall(to: phoneNumber, participantName: participantName)
+    }
+    
+    func endCurrentCall() {
+        callManager.endCall()
+    }
+    
+    func startRecordingCurrentCall() async -> Bool {
+        return await callManager.startRecording()
+    }
+    
+    func stopRecordingCurrentCall() {
+        callManager.stopRecording()
+    }
+    
+    var isCallActive: Bool {
+        callManager.isCallActive
+    }
+    
+    var isRecording: Bool {
+        callManager.isRecording
+    }
+    
+    var callDuration: TimeInterval {
+        callManager.callDuration
+    }
+    
+    var formattedDuration: String {
+        callManager.formattedDuration()
+    }
+    
+    var currentCall: VoIPCall? {
+        callManager.currentCall
+    }
+}
+

@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 
+@MainActor
 class APIKeyConfig {
     static let shared = APIKeyConfig()
     

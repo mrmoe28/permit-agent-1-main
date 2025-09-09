@@ -64,8 +64,9 @@ class MeetingStore: ObservableObject {
         progress = 0.0
         
         // Simulate recording progress
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
             Task { @MainActor in
+                guard let self = self else { return }
                 self.progress += 0.01
                 if self.progress >= 1.0 {
                     timer.invalidate()
@@ -83,8 +84,9 @@ class MeetingStore: ObservableObject {
         AppHaptic.notification(.success)
         
         // Simulate processing
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] timer in
             Task { @MainActor in
+                guard let self = self else { return }
                 self.progress += 0.05
                 if self.progress >= 1.0 {
                     timer.invalidate()
@@ -614,20 +616,18 @@ struct ModernDashboardApp: View {
     var body: some View {
         VStack(spacing: 0) {
             // Content
-            Group {
-                switch selectedTab {
-                case 0:
-                    ModernDashboardView()
-                case 2:
-                    TranscriptsView()
-                case 3:
-                    Text("Insights")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(AppColor.surfaceBackground)
-                        .semanticForeground(AppColor.textPrimary)
-                default:
-                    ModernDashboardView()
-                }
+            switch selectedTab {
+            case 0:
+                ModernDashboardView()
+            case 2:
+                TranscriptsView(onBackToLanding: {})
+            case 3:
+                Text("Insights")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(AppColor.surfaceBackground)
+                    .semanticForeground(AppColor.textPrimary)
+            default:
+                ModernDashboardView()
             }
             
             // Custom Tab Bar

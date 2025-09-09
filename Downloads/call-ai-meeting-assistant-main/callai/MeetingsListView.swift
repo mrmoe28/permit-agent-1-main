@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct MeetingsListView: View {
-    @StateObject private var calendarService = CalendarService()
+    @StateObject private var calendarService = CalendarServiceImpl()
     @StateObject private var meetingSelectionManager = MeetingSelectionManager.shared
     @Query private var storedMeetings: [Meeting]
     @State private var showingPermissionAlert = false
@@ -27,7 +27,7 @@ struct MeetingsListView: View {
                             buttonTitle: "Grant Access"
                         ) {
                             Task {
-                                await calendarService.requestCalendarAccess()
+                                try await calendarService.requestPermission()
                                 if calendarService.authorizationStatus == .denied {
                                     showingPermissionAlert = true
                                 }
@@ -110,12 +110,12 @@ struct MeetingsListView: View {
                 }
             }
             .refreshable {
-                await calendarService.refreshMeetings()
+                try await calendarService.loadUpcomingMeetings()
             }
             .onAppear {
                 if calendarService.authorizationStatus == .fullAccess {
                     Task {
-                        await calendarService.loadUpcomingMeetings()
+                        try await calendarService.loadUpcomingMeetings()
                     }
                 }
             }
@@ -284,7 +284,7 @@ struct MeetingCardView: View {
     }
 }
 
-struct MeetingRowView: View {
+struct MeetingsListRowView: View {
     let meeting: Meeting
     
     var body: some View {

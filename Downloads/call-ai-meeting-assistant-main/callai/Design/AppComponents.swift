@@ -28,10 +28,10 @@ enum MeetingStatus: CaseIterable {
     
     var color: Color {
         switch self {
-        case .recording: return AppColor.accentError
-        case .processing: return AppColor.accentWarning
-        case .completed: return AppColor.accentSuccess
-        case .idle: return AppColor.brandPurple
+        case .recording: return .red
+        case .processing: return .orange
+        case .completed: return .green
+        case .idle: return .blue
         }
     }
 }
