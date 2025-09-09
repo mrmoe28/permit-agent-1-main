@@ -1,0 +1,39 @@
+{
+  "name": "appstore-screenshot-tool",
+  "version": "1.0.0",
+  "description": "Guided screenshot tool for App Store Connect submission flow",
+  "type": "module",
+  "scripts": {
+    "dev": "playwright test --ui",
+    "capture": "tsx src/capture-appstore.ts",
+    "capture:enhanced": "tsx src/capture-appstore.ts --desktop",
+    "capture:desktop": "tsx src/desktop-capture.ts",
+    "capture:hybrid": "tsx src/hybrid-capture.ts",
+    "codegen": "playwright codegen https://appstoreconnect.apple.com/login",
+    "typecheck": "tsc --noEmit",
+    "install:playwright": "playwright install chromium",
+    "install:deps": "pnpm install && playwright install chromium"
+  },
+  "keywords": [
+    "app-store-connect",
+    "playwright",
+    "screenshots",
+    "automation",
+    "documentation"
+  ],
+  "author": "EkoDev",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "playwright": "^1.47.0",
+    "robotjs": "^0.6.0",
+    "sharp": "^0.33.0",
+    "node-screenshots": "^0.1.0"
+  }
+}
