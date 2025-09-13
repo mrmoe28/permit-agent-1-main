@@ -8,6 +8,24 @@ A powerful macOS app for quickly creating new projects from templates with integ
 
 **Requirements**: macOS 13.0+, Xcode 15.0+
 
+### 🔐 Code Signing & Security
+
+Template Manager now includes comprehensive code signing support to eliminate macOS security warnings:
+
+- **Ad Hoc Signing** (Free): Uses your Apple Development certificate for minimal security warnings
+- **Developer ID Signing** (Professional): Requires Apple Developer Program for zero security warnings
+- **Complete Documentation**: See [Code Signing Guide](CODE_SIGNING_GUIDE.md) for all options
+- **Security Troubleshooting**: See [macOS Security Fixes](MACOS_SECURITY_FIXES.md) for common issues
+
+**Quick Start:**
+```bash
+# Free Ad Hoc signing (minimal warnings)
+./build-adhoc.sh
+
+# Professional signing (zero warnings - requires Apple Developer Program)
+./build-signed.sh
+```
+
 ## 🚀 Features
 
 ### Core Features
@@ -64,9 +82,30 @@ A powerful macOS app for quickly creating new projects from templates with integ
 
 ## Installation
 
+### Option 1: Xcode Development
 1. Open the `TemplateManager.xcodeproj` in Xcode
 2. Build and run the app (⌘+R)
 3. The app will use the scripts and templates from the current directory
+
+### Option 2: Command Line Build (Recommended)
+
+#### Ad Hoc Signing (Free)
+```bash
+# Build with minimal security warnings
+./build-adhoc.sh
+```
+
+#### Professional Signing (Apple Developer Program)
+```bash
+# Build with zero security warnings
+./build-signed.sh
+```
+
+#### Universal Binary (Unsigned)
+```bash
+# Build without code signing (shows security warnings)
+./build-universal.sh
+```
 
 ## Usage
 
@@ -198,7 +237,12 @@ template-manager/
 │   └── Resources/               # Scripts and config
 ├── template-config.json         # Template definitions
 ├── setup-from-config.sh         # Generic setup script
-└── setup-nextjs-auth.sh        # Next.js specific setup
+├── setup-nextjs-auth.sh        # Next.js specific setup
+├── build-universal.sh           # Universal binary build (unsigned)
+├── build-adhoc.sh              # Ad Hoc code signing (free)
+├── build-signed.sh             # Developer ID signing (professional)
+├── CODE_SIGNING_GUIDE.md       # Code signing documentation
+└── MACOS_SECURITY_FIXES.md     # Security troubleshooting guide
 ```
 
 ## Development
@@ -252,6 +296,23 @@ The app requires the following entitlements:
 - Re-authenticate in GitHub settings
 - Check Personal Access Token permissions
 - Ensure repository name is unique
+
+### Security Issues
+
+#### "App Not Opened" Security Dialog
+- **Quick Fix**: Right-click the app → "Open" → Click "Open" in dialog
+- **Permanent Fix**: Use code signing (see [Code Signing Guide](CODE_SIGNING_GUIDE.md))
+- **Remove Quarantine**: `xattr -d com.apple.quarantine TemplateManager.app`
+
+#### Code Signing Issues
+- **No Certificate**: See [Code Signing Guide](CODE_SIGNING_GUIDE.md) for setup
+- **Signing Failed**: Check certificate validity and permissions
+- **Still Shows Warnings**: Consider Apple Developer Program for complete security
+
+#### Build Script Issues
+- **Permission Denied**: `chmod +x build-*.sh`
+- **Certificate Not Found**: Run `security find-identity -p codesigning -v`
+- **Build Fails**: Check Xcode and Swift installation
 
 ## Contributing
 
