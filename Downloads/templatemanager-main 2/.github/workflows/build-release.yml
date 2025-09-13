@@ -1,0 +1,148 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build:
+    name: Build Template Manager
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      
+      - name: Set version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=${{ github.event.inputs.version }}
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+      
+      - name: Update version in Info.plist
+        run: |
+          # Update version in TemplateManager/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ steps.version.outputs.VERSION }}" TemplateManager/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ steps.version.outputs.VERSION }}" TemplateManager/App/Info.plist || true
+      
+      - name: Build with build.sh
+        run: |
+          chmod +x build.sh
+          ./build.sh
+      
+      - name: Prepare for distribution
+        run: |
+          # The build.sh script creates the app in build/TemplateManager.app
+          mkdir -p build/export
+          cp -R build/TemplateManager.app build/export/
+      
+      - name: Create ZIP
+        run: |
+          cd build/export
+          zip -r ../../TemplateManager-${{ steps.version.outputs.VERSION }}.zip TemplateManager.app
+          cd ../..
+      
+      - name: Create DMG
+        run: |
+          # Install create-dmg if not available
+          brew install create-dmg || true
+          
+          # Create DMG
+          create-dmg \
+            --volname "Template Manager" \
+            --volicon "TemplateManager/Resources/AppIcon.icns" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "TemplateManager.app" 150 150 \
+            --hide-extension "TemplateManager.app" \
+            --app-drop-link 450 150 \
+            --no-internet-enable \
+            "TemplateManager-${{ steps.version.outputs.VERSION }}.dmg" \
+            "build/export/TemplateManager.app"
+      
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          cat << EOF > release_notes.md
+          ## Template Manager v${{ steps.version.outputs.VERSION }}
+          
+          ### Installation
+          
+          #### Option 1: DMG Installer (Recommended)
+          1. Download \`TemplateManager-${{ steps.version.outputs.VERSION }}.dmg\`
+          2. Double-click to mount
+          3. Drag Template Manager to Applications
+          4. Right-click and select "Open" on first launch
+          
+          #### Option 2: ZIP Archive
+          1. Download \`TemplateManager-${{ steps.version.outputs.VERSION }}.zip\`
+          2. Double-click to extract
+          3. Move Template Manager.app to Applications
+          4. Right-click and select "Open" on first launch
+          
+          #### Option 3: Install Script
+          \`\`\`bash
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+          \`\`\`
+          
+          ### What's New
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          
+          ### Requirements
+          - macOS 13.0 or later
+          - jq (for template processing)
+          
+          ### Troubleshooting
+          If macOS blocks the app:
+          1. Go to System Settings > Privacy & Security
+          2. Click "Open Anyway" next to the Template Manager message
+          
+          Or remove quarantine:
+          \`\`\`bash
+          xattr -cr /Applications/TemplateManager.app
+          \`\`\`
+          EOF
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            TemplateManager-${{ steps.version.outputs.VERSION }}.dmg
+            TemplateManager-${{ steps.version.outputs.VERSION }}.zip
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TemplateManager-${{ steps.version.outputs.VERSION }}
+          path: |
+            TemplateManager-${{ steps.version.outputs.VERSION }}.dmg
+            TemplateManager-${{ steps.version.outputs.VERSION }}.zip
+
+  # Universal binary build removed for now - focusing on getting basic build working
+  # The x86_64 binary will run on both Intel and Apple Silicon Macs via Rosetta 2

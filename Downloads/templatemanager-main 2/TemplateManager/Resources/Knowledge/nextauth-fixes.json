@@ -1,0 +1,204 @@
+{
+  "name": "NextAuth Google OAuth Fixes and Best Practices",
+  "version": "1.0.0",
+  "lastUpdated": "2025-08-01",
+  "description": "Comprehensive fixes and best practices for NextAuth Google OAuth implementation based on real-world troubleshooting",
+  "fixes": {
+    "dependencies": {
+      "issue": "NextAuth v5 beta compatibility issues",
+      "solution": "Use stable NextAuth v4",
+      "implementation": {
+        "correct_dependencies": {
+          "next-auth": "4.24.5",
+          "@next-auth/prisma-adapter": "^1.0.7"
+        },
+        "remove_dependencies": [
+          "next-auth@beta",
+          "@auth/prisma-adapter"
+        ],
+        "commands": [
+          "npm uninstall next-auth @auth/prisma-adapter",
+          "npm install next-auth@4.24.5 @next-auth/prisma-adapter"
+        ]
+      }
+    },
+    "route_exports": {
+      "issue": "Next.js 14 requires named exports for API routes",
+      "solution": "Use named exports instead of default export",
+      "implementation": {
+        "correct_pattern": "export { handler as GET, handler as POST }",
+        "incorrect_pattern": "export default NextAuth(...)",
+        "file_structure": "app/api/auth/[...nextauth]/route.ts"
+      }
+    },
+    "environment_setup": {
+      "issue": "Environment variables not properly configured",
+      "solution": "Proper .env.local configuration with correct formatting",
+      "implementation": {
+        "required_vars": [
+          "NEXTAUTH_URL",
+          "NEXTAUTH_SECRET",
+          "GOOGLE_CLIENT_ID",
+          "GOOGLE_CLIENT_SECRET",
+          "DATABASE_URL"
+        ],
+        "secret_generation": "openssl rand -base64 32",
+        "database_url_format": "file:./dev.db"
+      }
+    },
+    "database_setup": {
+      "issue": "Prisma client not generated",
+      "solution": "Generate Prisma client and use SQLite for development",
+      "implementation": {
+        "commands": [
+          "npx prisma generate",
+          "npx prisma db push"
+        ],
+        "development_db": "sqlite",
+        "production_db": "postgresql"
+      }
+    },
+    "jwt_session_errors": {
+      "issue": "JWT session decryption failures",
+      "solution": "Configure proper session callbacks and JWT strategy",
+      "implementation": {
+        "session_strategy": "jwt",
+        "callbacks": {
+          "session": "Handle token to session mapping",
+          "jwt": "Persist user ID in token"
+        },
+        "error_message": "[next-auth][error][JWT_SESSION_ERROR] decryption operation failed"
+      }
+    },
+    "oauth_user_creation": {
+      "issue": "User records not created for OAuth sign-ins",
+      "solution": "Check and create user records in API routes",
+      "implementation": {
+        "pattern": "findUnique -> create if not exists",
+        "error_prevented": "PrismaClientKnownRequestError: Record to update not found"
+      }
+    },
+    "oauth_timeout_issues": {
+      "issue": "OAuth sign-in timeouts",
+      "solution": "Enhanced OAuth provider configuration",
+      "implementation": {
+        "google_params": {
+          "prompt": "consent",
+          "access_type": "offline",
+          "response_type": "code"
+        },
+        "manual_redirect": true,
+        "error_handling": "comprehensive"
+      }
+    },
+    "missing_dependencies_install": {
+      "issue": "node_modules directory missing",
+      "solution": "Always run npm install first",
+      "implementation": {
+        "command": "npm install",
+        "verification": "check for node_modules/.bin/next"
+      }
+    }
+  },
+  "code_templates": {
+    "nextauth_route": {
+      "path": "app/api/auth/[...nextauth]/route.ts",
+      "content": "import NextAuth from 'next-auth'\nimport { authOptions } from '@/lib/auth/auth-options'\n\nconst handler = NextAuth(authOptions)\n\nexport { handler as GET, handler as POST }"
+    },
+    "auth_options": {
+      "path": "lib/auth/auth-options.ts",
+      "content": "import { NextAuthOptions } from 'next-auth'\nimport GoogleProvider from 'next-auth/providers/google'\nimport { PrismaAdapter } from '@next-auth/prisma-adapter'\nimport { prisma } from '@/lib/db/prisma'\n\nexport const authOptions: NextAuthOptions = {\n  adapter: PrismaAdapter(prisma),\n  providers: [\n    GoogleProvider({\n      clientId: process.env.GOOGLE_CLIENT_ID!,\n      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,\n      authorization: {\n        params: {\n          prompt: 'consent',\n          access_type: 'offline',\n          response_type: 'code'\n        }\n      }\n    }),\n  ],\n  session: {\n    strategy: 'jwt',\n    maxAge: 30 * 24 * 60 * 60, // 30 days\n  },\n  pages: {\n    signIn: '/login',\n  },\n  callbacks: {\n    async session({ session, token }) {\n      if (token) {\n        session.user.id = token.id as string\n      }\n      return session\n    },\n    async jwt({ token, user }) {\n      if (user) {\n        token.id = user.id\n      }\n      return token\n    },\n  },\n  debug: process.env.NODE_ENV === 'development',\n}"
+    },
+    "prisma_schema": {
+      "path": "prisma/schema.prisma",
+      "content": "generator client {\n  provider = 'prisma-client-js'\n}\n\ndatasource db {\n  provider = 'sqlite'\n  url      = env('DATABASE_URL')\n}\n\nmodel Account {\n  id                String  @id @default(cuid())\n  userId            String\n  type              String\n  provider          String\n  providerAccountId String\n  refresh_token     String?\n  access_token      String?\n  expires_at        Int?\n  token_type        String?\n  scope             String?\n  id_token          String?\n  session_state     String?\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@unique([provider, providerAccountId])\n}\n\nmodel Session {\n  id           String   @id @default(cuid())\n  sessionToken String   @unique\n  userId       String\n  expires      DateTime\n  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n}\n\nmodel User {\n  id            String    @id @default(cuid())\n  name          String?\n  email         String?   @unique\n  emailVerified DateTime?\n  image         String?\n  accounts      Account[]\n  sessions      Session[]\n}\n\nmodel VerificationToken {\n  identifier String\n  token      String   @unique\n  expires    DateTime\n\n  @@unique([identifier, token])\n}"
+    },
+    "env_local_example": {
+      "path": ".env.local",
+      "content": "# NextAuth Configuration\nNEXTAUTH_URL=http://localhost:3000\nNEXTAUTH_SECRET=your-generated-secret-here\n\n# Google OAuth\nGOOGLE_CLIENT_ID=your_actual_google_client_id\nGOOGLE_CLIENT_SECRET=your_actual_google_client_secret\n\n# Database\nDATABASE_URL=\"file:./dev.db\""
+    }
+  },
+  "setup_sequence": [
+    {
+      "step": 1,
+      "action": "Create project structure",
+      "command": "Use template structure from config"
+    },
+    {
+      "step": 2,
+      "action": "Install dependencies",
+      "command": "npm install",
+      "note": "Must be done before any other npm commands"
+    },
+    {
+      "step": 3,
+      "action": "Configure environment variables",
+      "command": "cp .env.local.example .env.local && openssl rand -base64 32",
+      "note": "Add the generated secret to NEXTAUTH_SECRET"
+    },
+    {
+      "step": 4,
+      "action": "Generate Prisma client",
+      "command": "npx prisma generate",
+      "note": "Required before running the app"
+    },
+    {
+      "step": 5,
+      "action": "Create database",
+      "command": "npx prisma db push",
+      "note": "Creates SQLite database and tables"
+    },
+    {
+      "step": 6,
+      "action": "Run development server",
+      "command": "npm run dev",
+      "note": "Server will run on http://localhost:3000"
+    }
+  ],
+  "common_errors": {
+    "module_not_found": {
+      "error": "Cannot find module '.prisma/client/default'",
+      "solution": "Run 'npx prisma generate'"
+    },
+    "nextauth_not_function": {
+      "error": "TypeError: r is not a function",
+      "solution": "Downgrade to NextAuth v4 from v5 beta"
+    },
+    "default_export_error": {
+      "error": "Detected default export in route.ts",
+      "solution": "Use named exports: export { handler as GET, handler as POST }"
+    },
+    "env_not_found": {
+      "error": "Environment variable not found: DATABASE_URL",
+      "solution": "Check .env.local formatting and load with proper command"
+    },
+    "route_conflict": {
+      "error": "You cannot have two parallel pages that resolve to the same path",
+      "solution": "Remove duplicate page files, use route groups for organization"
+    },
+    "database_empty": {
+      "error": "Database file exists but is empty",
+      "solution": "Manually apply migrations: sqlite3 dev.db < prisma/migrations/*/migration.sql"
+    },
+    "oauth_user_missing": {
+      "error": "Record to update not found",
+      "solution": "Create user record if it doesn't exist in API routes"
+    }
+  },
+  "production_considerations": [
+    "Use PostgreSQL instead of SQLite for production",
+    "Set proper NEXTAUTH_URL for production domain",
+    "Create production Google OAuth credentials",
+    "Implement proper error handling and logging",
+    "Add rate limiting and security measures",
+    "Verify database persistence before deployment",
+    "Test OAuth flow with production credentials",
+    "Implement user creation for OAuth sign-ins",
+    "Configure session maxAge appropriately",
+    "Enable debug mode only in development"
+  ],
+  "enhanced_patterns": {
+    "user_creation_pattern": "// Check and create user if not exists\nlet user = await prisma.user.findUnique({\n  where: { email: session.user.email },\n});\n\nif (!user) {\n  user = await prisma.user.create({\n    data: {\n      email: session.user.email,\n      name: session.user.name,\n      image: session.user.image,\n    },\n  });\n}",
+    "signin_with_error_handling": "const result = await signIn('google', {\n  redirect: false,\n  callbackUrl: '/dashboard'\n});\n\nif (result?.error) {\n  // Handle error\n  console.error('Sign in error:', result.error);\n} else if (result?.url) {\n  // Manual redirect\n  router.push(result.url);\n}"
+  }
+}

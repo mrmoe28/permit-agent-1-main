@@ -1,0 +1,209 @@
+{
+  "name": "GamerDev Project Error Fixes and Solutions",
+  "version": "1.0.0",
+  "lastUpdated": "2025-08-01",
+  "description": "Comprehensive error fixes from the GamerDev project - a Next.js 14 social media hub with NextAuth Google OAuth",
+  "projectDetails": {
+    "framework": "Next.js 14.1.0 with App Router",
+    "authentication": "NextAuth.js v4.24.5 with Google OAuth",
+    "database": "SQLite with Prisma ORM",
+    "styling": "Tailwind CSS"
+  },
+  "criticalFixes": {
+    "nextauth_version_compatibility": {
+      "error": "Error: Failed to read source code from /node_modules/next-auth/react.js",
+      "rootCause": "NextAuth v5 beta was unstable and incompatible",
+      "fix": {
+        "action": "Downgrade to stable NextAuth v4",
+        "dependencies": {
+          "next-auth": "4.24.5",
+          "@auth/prisma-adapter": "1.0.12"
+        },
+        "routeExports": {
+          "file": "app/api/auth/[...nextauth]/route.ts",
+          "correct": "const handler = NextAuth(authOptions)\nexport { handler as GET, handler as POST }",
+          "incorrect": "export default NextAuth(authOptions)"
+        }
+      },
+      "preventionRules": [
+        "Always use stable versions of NextAuth (v4.24.5)",
+        "Never use beta versions in production templates",
+        "Use named exports for Next.js 13+ API routes"
+      ]
+    },
+    "database_schema_configuration": {
+      "error": "Error validating datasource db: the URL must start with the protocol postgresql:// or postgres://",
+      "rootCause": "Prisma schema configured for PostgreSQL but DATABASE_URL set for SQLite",
+      "fix": {
+        "action": "Match Prisma provider with DATABASE_URL format",
+        "schema": {
+          "development": "provider = \"sqlite\"",
+          "production": "provider = \"postgresql\""
+        },
+        "envVar": "DATABASE_URL=\"file:./dev.db\""
+      },
+      "preventionRules": [
+        "Verify Prisma schema provider matches DATABASE_URL",
+        "Use SQLite for development, PostgreSQL for production",
+        "Include environment-specific schema configurations"
+      ]
+    },
+    "route_conflict": {
+      "error": "You cannot have two parallel pages that resolve to the same path",
+      "rootCause": "Duplicate dashboard pages in different directories",
+      "fix": {
+        "action": "Remove duplicate routes",
+        "keep": "app/(protected)/dashboard/page.tsx",
+        "delete": "app/dashboard/page.tsx"
+      },
+      "preventionRules": [
+        "Use route groups for protected routes",
+        "Avoid duplicate page files",
+        "Follow Next.js App Router conventions"
+      ]
+    },
+    "middleware_export": {
+      "error": "TypeError: r is not a function",
+      "rootCause": "Generic middleware export issues with NextAuth",
+      "fix": {
+        "action": "Remove problematic middleware or fix exports",
+        "solution": "Delete middleware.ts if not essential"
+      },
+      "preventionRules": [
+        "Test middleware thoroughly with NextAuth",
+        "Use proper middleware exports",
+        "Consider if middleware is necessary"
+      ]
+    },
+    "jwt_session_decryption": {
+      "error": "[next-auth][error][JWT_SESSION_ERROR] decryption operation failed",
+      "rootCause": "NextAuth session handling configuration issues",
+      "fix": {
+        "action": "Configure proper session and JWT callbacks",
+        "authOptions": {
+          "session": {
+            "strategy": "jwt"
+          },
+          "callbacks": {
+            "session": "async ({ session, token }) => {\n  if (token) {\n    session.user.id = token.id as string\n  }\n  return session\n}",
+            "jwt": "async ({ token, user }) => {\n  if (user) {\n    token.id = user.id\n  }\n  return token\n}"
+          }
+        }
+      },
+      "preventionRules": [
+        "Always configure JWT callbacks",
+        "Set session strategy to 'jwt' for OAuth",
+        "Handle user ID propagation properly"
+      ]
+    },
+    "user_record_not_found": {
+      "error": "PrismaClientKnownRequestError: Record to update not found",
+      "rootCause": "User records not created for new OAuth users",
+      "fix": {
+        "action": "Create user records if they don't exist",
+        "implementation": {
+          "checkAndCreate": "let user = await prisma.user.findUnique({\n  where: { email: session.user.email },\n});\n\nif (!user) {\n  user = await prisma.user.create({\n    data: {\n      email: session.user.email,\n      name: session.user.name,\n      image: session.user.image,\n    },\n  });\n}"
+        }
+      },
+      "preventionRules": [
+        "Always check if user exists before updating",
+        "Create user records for OAuth sign-ins",
+        "Handle user creation in API routes"
+      ]
+    },
+    "database_persistence": {
+      "error": "SQLite dev.db file remained empty",
+      "rootCause": "Prisma CLI commands not creating populated database",
+      "fix": {
+        "action": "Manually create and populate database",
+        "commands": [
+          "rm dev.db",
+          "touch dev.db",
+          "export DATABASE_URL=\"file:./dev.db\"",
+          "sqlite3 dev.db < prisma/migrations/*/migration.sql"
+        ]
+      },
+      "preventionRules": [
+        "Verify database file creation",
+        "Check database population after migrations",
+        "Include database setup verification"
+      ]
+    },
+    "oauth_timeout": {
+      "error": "[next-auth][error][SIGNIN_OAUTH_ERROR] outgoing request timed out after 3500ms",
+      "rootCause": "OAuth configuration and network timeout issues",
+      "fix": {
+        "action": "Enhanced OAuth configuration",
+        "googleProvider": {
+          "authorization": {
+            "params": {
+              "prompt": "consent",
+              "access_type": "offline",
+              "response_type": "code"
+            }
+          }
+        },
+        "signInOptions": {
+          "redirect": false,
+          "callbackUrl": "/dashboard"
+        }
+      },
+      "preventionRules": [
+        "Configure OAuth parameters properly",
+        "Handle redirects manually for better control",
+        "Add comprehensive error handling"
+      ]
+    }
+  },
+  "enhancedConfigurations": {
+    "userModel": {
+      "customFields": [
+        "displayName String?",
+        "bio String?",
+        "location String?",
+        "website String?",
+        "customImage String?",
+        "skills String?",
+        "socialLinks String?",
+        "createdAt DateTime @default(now())",
+        "updatedAt DateTime @updatedAt"
+      ]
+    },
+    "errorHandling": {
+      "clientSide": "Use try-catch with user-friendly error messages",
+      "serverSide": "Implement proper error responses with status codes",
+      "logging": "Add comprehensive logging for debugging"
+    }
+  },
+  "bestPractices": {
+    "authentication": [
+      "Use stable NextAuth versions (v4.24.5)",
+      "Configure JWT strategy for OAuth providers",
+      "Handle user creation in callbacks",
+      "Use manual redirects for better error handling"
+    ],
+    "database": [
+      "Verify schema provider matches DATABASE_URL",
+      "Always check database file creation",
+      "Create user records for OAuth users",
+      "Use proper error handling in queries"
+    ],
+    "routing": [
+      "Avoid duplicate route definitions",
+      "Use route groups for organization",
+      "Handle protected routes properly",
+      "Implement loading states"
+    ]
+  },
+  "setupVerification": {
+    "checklist": [
+      "Dependencies installed (npm install)",
+      "Environment variables configured",
+      "Database file exists and is populated",
+      "Prisma client generated",
+      "No duplicate routes",
+      "OAuth credentials configured",
+      "Session strategy set to JWT"
+    ]
+  }
+}

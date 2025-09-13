@@ -1,0 +1,204 @@
+{
+  "ecommerce": {
+    "directories": [
+      "components/product",
+      "components/cart", 
+      "components/checkout",
+      "pages/api/products",
+      "pages/api/orders",
+      "lib/payment",
+      "lib/inventory"
+    ],
+    "files": [
+      "components/product/ProductCard.jsx",
+      "components/cart/CartItem.jsx",
+      "lib/payment/stripe.js",
+      "pages/api/products/[id].js"
+    ]
+  },
+  "ecommerce-blank": {
+    "directories": [
+      "pages",
+      "components",
+      "lib",
+      "public"
+    ],
+    "files": [
+      "pages/index.js",
+      "pages/products.js",
+      "components/Layout.jsx",
+      "components/ProductCard.jsx",
+      "lib/products.js",
+      "package.json",
+      "next.config.js",
+      "README.md"
+    ]
+  },
+  "blog": {
+    "directories": [
+      "components/blog",
+      "components/editor", 
+      "content/posts",
+      "pages/api/posts",
+      "lib/mdx"
+    ],
+    "files": [
+      "components/blog/PostCard.jsx",
+      "components/editor/MarkdownEditor.jsx",
+      "lib/mdx/processor.js",
+      "content/posts/example.md"
+    ]
+  },
+  "blog-blank": {
+    "directories": [
+      "pages",
+      "components",
+      "content",
+      "public"
+    ],
+    "files": [
+      "pages/index.js",
+      "pages/blog/[slug].js",
+      "components/Layout.jsx",
+      "components/PostCard.jsx",
+      "content/hello-world.md",
+      "package.json",
+      "next.config.js",
+      "README.md"
+    ]
+  },
+  "nextjs-google-auth": {
+    "directories": [
+      "app/(auth)/login",
+      "app/(protected)/dashboard",
+      "app/api/auth/[...nextauth]",
+      "components/auth",
+      "lib/auth",
+      "lib/db",
+      "prisma",
+      "public",
+      "hooks"
+    ],
+    "files": [
+      "app/layout.tsx",
+      "app/page.tsx",
+      "app/(auth)/login/page.tsx",
+      "app/(protected)/dashboard/page.tsx",
+      "app/api/auth/[...nextauth]/route.ts",
+      "components/auth/LoginButton.tsx",
+      "components/auth/UserMenu.tsx",
+      "lib/auth/auth-options.ts",
+      "lib/db/prisma.ts",
+      "prisma/schema.prisma",
+      "middleware.ts",
+      ".env.local.example",
+      "next.config.js",
+      "package.json",
+      "tsconfig.json",
+      "tailwind.config.js",
+      "postcss.config.js"
+    ]
+  },
+  "nextjs-auth-blank": {
+    "directories": [
+      "app",
+      "app/api/auth/[...nextauth]",
+      "components",
+      "lib"
+    ],
+    "files": [
+      "app/layout.tsx",
+      "app/page.tsx",
+      "app/api/auth/[...nextauth]/route.ts",
+      "components/LoginButton.tsx",
+      "lib/auth.ts",
+      ".env.local.example",
+      "package.json",
+      "next.config.js",
+      "tsconfig.json",
+      "README.md"
+    ]
+  },
+  "fullstack-database": {
+    "directories": [
+      "server/controllers",
+      "server/routes",
+      "server/models",
+      "server/middleware",
+      "server/config",
+      "server/utils",
+      "client/components",
+      "client/pages",
+      "client/services",
+      "client/hooks",
+      "prisma/migrations",
+      "scripts"
+    ],
+    "files": [
+      "server/index.js",
+      "server/routes/users.js",
+      "server/routes/products.js",
+      "server/routes/orders.js",
+      "server/controllers/userController.js",
+      "server/controllers/productController.js",
+      "server/controllers/orderController.js",
+      "server/middleware/auth.js",
+      "server/middleware/errorHandler.js",
+      "server/config/database.js",
+      "server/utils/jwt.js",
+      "client/services/api.js",
+      "client/pages/Dashboard.jsx",
+      "client/components/UserList.jsx",
+      "client/components/ProductForm.jsx",
+      "prisma/schema.prisma",
+      "prisma/seed.ts",
+      "docker-compose.yml",
+      ".env.example",
+      "package.json"
+    ]
+  },
+  "fullstack-blank": {
+    "directories": [
+      "server",
+      "client/src",
+      "client/public"
+    ],
+    "files": [
+      "server/index.js",
+      "server/package.json",
+      "client/src/App.jsx",
+      "client/src/index.js",
+      "client/package.json",
+      "package.json",
+      "README.md"
+    ]
+  },
+  "react-typescript-starter": {
+    "directories": [],
+    "files": [],
+    "githubRepository": "facebook/create-react-app",
+    "githubBranch": "main",
+    "description": "Official React TypeScript starter template from Facebook"
+  },
+  "nextjs-starter": {
+    "directories": [],
+    "files": [],
+    "githubRepository": "vercel/next.js",
+    "githubBranch": "canary",
+    "description": "Next.js starter template with App Router"
+  },
+  "vite-react-ts": {
+    "directories": [],
+    "files": [],
+    "githubRepository": "vitejs/vite",
+    "githubBranch": "main",
+    "description": "Vite + React + TypeScript starter template"
+  },
+  "express-api-starter": {
+    "directories": [],
+    "files": [],
+    "githubRepository": "expressjs/express",
+    "githubBranch": "master",
+    "description": "Express.js REST API starter template"
+  }
+}

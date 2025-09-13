@@ -1,0 +1,132 @@
+import Foundation
+
+struct TemplateFix: Codable {
+    let issue: String
+    let solution: String
+    let implementation: [String: Any]?
+    
+    enum CodingKeys: String, CodingKey {
+        case issue, solution, implementation
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        issue = try container.decode(String.self, forKey: .issue)
+        solution = try container.decode(String.self, forKey: .solution)
+        implementation = try container.decodeIfPresent([String: Any].self, forKey: .implementation)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(issue, forKey: .issue)
+        try container.encode(solution, forKey: .solution)
+    }
+}
+
+struct TemplateKnowledge: Codable {
+    let name: String
+    let version: String
+    let lastUpdated: String
+    let description: String
+    let fixes: [String: Any]
+    let codeTemplates: [String: [String: String]]
+    let setupSequence: [[String: Any]]
+    let commonErrors: [String: [String: String]]
+    let productionConsiderations: [String]
+    
+    enum CodingKeys: String, CodingKey {
+        case name, version, lastUpdated, description, fixes
+        case codeTemplates = "code_templates"
+        case setupSequence = "setup_sequence"
+        case commonErrors = "common_errors"
+        case productionConsiderations = "production_considerations"
+    }
+}
+
+class KnowledgeService {
+    static let shared = KnowledgeService()
+    
+    private let knowledgeDirectory: URL
+    
+    private init() {
+        if let resourcePath = Bundle.main.resourcePath {
+            self.knowledgeDirectory = URL(fileURLWithPath: resourcePath)
+                .appendingPathComponent("Knowledge")
+        } else {
+            // Fallback for development
+            self.knowledgeDirectory = URL(fileURLWithPath: #file)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("Resources")
+                .appendingPathComponent("Knowledge")
+        }
+    }
+    
+    func loadKnowledge(for template: String) -> TemplateKnowledge? {
+        let knowledgeFile = knowledgeDirectory.appendingPathComponent("\(template)-fixes.json")
+        
+        guard FileManager.default.fileExists(atPath: knowledgeFile.path) else {
+            print("No knowledge file found for template: \(template)")
+            return nil
+        }
+        
+        do {
+            let data = try Data(contentsOf: knowledgeFile)
+            let knowledge = try JSONDecoder().decode(TemplateKnowledge.self, from: data)
+            return knowledge
+        } catch {
+            print("Error loading knowledge for \(template): \(error)")
+            return nil
+        }
+    }
+    
+    func applyFixes(for template: String, to projectPath: URL) {
+        guard let knowledge = loadKnowledge(for: template) else { return }
+        
+        // Apply code templates
+        for (_, template) in knowledge.codeTemplates {
+            if let path = template["path"], let content = template["content"] {
+                let filePath = projectPath.appendingPathComponent(path)
+                
+                // Create directory if needed
+                let directory = filePath.deletingLastPathComponent()
+                try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                
+                // Write the fixed content
+                try? content.write(to: filePath, atomically: true, encoding: .utf8)
+                print("Applied fix to: \(path)")
+            }
+        }
+    }
+    
+    func getSetupScript(for template: String) -> String? {
+        // First check if there's a fixed version
+        let fixedScriptPath = Bundle.main.resourcePath.map { path in
+            URL(fileURLWithPath: path)
+                .appendingPathComponent("Scripts")
+                .appendingPathComponent("setup-\(template)-fixed.sh")
+        }
+        
+        if let fixedPath = fixedScriptPath,
+           FileManager.default.fileExists(atPath: fixedPath.path) {
+            return fixedPath.path
+        }
+        
+        // Fallback to regular script
+        let regularScriptPath = Bundle.main.resourcePath.map { path in
+            URL(fileURLWithPath: path)
+                .appendingPathComponent("Scripts")
+                .appendingPathComponent("setup-\(template).sh")
+        }
+        
+        return regularScriptPath?.path
+    }
+    
+    func getCommonErrors(for template: String) -> [String: [String: String]]? {
+        return loadKnowledge(for: template)?.commonErrors
+    }
+    
+    func getProductionConsiderations(for template: String) -> [String]? {
+        return loadKnowledge(for: template)?.productionConsiderations
+    }
+}

@@ -1,0 +1,120 @@
+import SwiftUI
+import AppKit
+
+struct IconGenerator {
+    static func generateIcon(size: CGSize) -> NSImage {
+        let renderer = ImageRenderer(content: iconView(size: size))
+        renderer.scale = 1.0
+        
+        let nsImage = NSImage(size: size)
+        nsImage.lockFocus()
+        
+        if let cgImage = renderer.cgImage {
+            let context = NSGraphicsContext.current!.cgContext
+            context.draw(cgImage, in: CGRect(origin: .zero, size: size))
+        }
+        
+        nsImage.unlockFocus()
+        return nsImage
+    }
+    
+    @ViewBuilder
+    static func iconView(size: CGSize) -> some View {
+        ZStack {
+            // Background gradient
+            RoundedRectangle(cornerRadius: size.width * 0.2)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0, green: 0.48, blue: 1.0),      // #007AFF
+                            Color(red: 0, green: 0.32, blue: 0.84)      // #0051D5
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // Template layers effect
+            VStack(spacing: size.width * 0.02) {
+                // Back layer
+                RoundedRectangle(cornerRadius: size.width * 0.05)
+                    .fill(Color.white.opacity(0.2))
+                    .frame(width: size.width * 0.5, height: size.height * 0.6)
+                    .offset(x: size.width * 0.05, y: -size.height * 0.05)
+                
+                // Middle layer
+                RoundedRectangle(cornerRadius: size.width * 0.05)
+                    .fill(Color.white.opacity(0.4))
+                    .frame(width: size.width * 0.5, height: size.height * 0.6)
+                    .offset(x: size.width * 0.025, y: -size.height * 0.025)
+                
+                // Front layer (main template)
+                ZStack {
+                    RoundedRectangle(cornerRadius: size.width * 0.05)
+                        .fill(Color.white)
+                        .frame(width: size.width * 0.5, height: size.height * 0.6)
+                    
+                    // Document lines
+                    VStack(spacing: size.height * 0.04) {
+                        ForEach(0..<3) { _ in
+                            RoundedRectangle(cornerRadius: size.width * 0.01)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: size.width * 0.35, height: size.height * 0.03)
+                        }
+                    }
+                }
+            }
+            
+            // Plus symbol in corner
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: size.width * 0.3, height: size.width * 0.3)
+                
+                Image(systemName: "plus")
+                    .font(.system(size: size.width * 0.18, weight: .bold))
+                    .foregroundColor(Color(red: 0, green: 0.48, blue: 1.0))
+            }
+            .offset(x: size.width * 0.25, y: size.height * 0.25)
+            .shadow(color: .black.opacity(0.2), radius: size.width * 0.02)
+        }
+        .frame(width: size.width, height: size.height)
+    }
+    
+    static func generateAllIcons() {
+        let sizes = [16, 32, 64, 128, 256, 512, 1024]
+        let outputDir = FileManager.default.currentDirectoryPath + "/icon.iconset"
+        
+        // Create iconset directory
+        try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+        
+        for size in sizes {
+            let icon = generateIcon(size: CGSize(width: size, height: size))
+            
+            // Save regular resolution
+            if let tiffData = icon.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiffData),
+               let pngData = bitmap.representation(using: .png, properties: [:]) {
+                let filename = "\(outputDir)/icon_\(size)x\(size).png"
+                try? pngData.write(to: URL(fileURLWithPath: filename))
+                print("Generated: icon_\(size)x\(size).png")
+            }
+            
+            // Save @2x resolution for sizes up to 512
+            if size <= 512 {
+                let icon2x = generateIcon(size: CGSize(width: size * 2, height: size * 2))
+                if let tiffData = icon2x.tiffRepresentation,
+                   let bitmap = NSBitmapImageRep(data: tiffData),
+                   let pngData = bitmap.representation(using: .png, properties: [:]) {
+                    let filename = "\(outputDir)/icon_\(size)x\(size)@2x.png"
+                    try? pngData.write(to: URL(fileURLWithPath: filename))
+                    print("Generated: icon_\(size)x\(size)@2x.png")
+                }
+            }
+        }
+        
+        print("\nIcon generation complete!")
+        print("To create .icns file, run:")
+        print("iconutil -c icns icon.iconset")
+    }
+}

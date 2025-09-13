@@ -1,0 +1,110 @@
+{
+  "ecommerce": {
+    "displayName": "E-Commerce",
+    "description": "Full-featured e-commerce template with product catalog, cart, and checkout",
+    "category": "full",
+    "features": [
+      "Product catalog with categories",
+      "Shopping cart functionality", 
+      "Stripe payment integration",
+      "Inventory management",
+      "Order processing"
+    ],
+    "technologies": ["Next.js", "React", "Stripe", "Tailwind CSS"],
+    "icon": "cart"
+  },
+  "ecommerce-blank": {
+    "displayName": "E-Commerce (Blank)",
+    "description": "Minimal e-commerce starter with basic product pages",
+    "category": "blank",
+    "features": [
+      "Basic product listing",
+      "Simple product pages",
+      "Minimal styling",
+      "Ready to customize"
+    ],
+    "technologies": ["Next.js", "React"],
+    "icon": "cart.badge.minus"
+  },
+  "blog": {
+    "displayName": "Blog",
+    "description": "Feature-rich blog with markdown editor and MDX support",
+    "category": "full",
+    "features": [
+      "Markdown editor",
+      "MDX support for interactive content",
+      "Blog post management",
+      "Categories and tags",
+      "SEO optimized"
+    ],
+    "technologies": ["Next.js", "React", "MDX", "Tailwind CSS"],
+    "icon": "newspaper"
+  },
+  "blog-blank": {
+    "displayName": "Blog (Blank)",
+    "description": "Simple blog starter with markdown support",
+    "category": "blank",
+    "features": [
+      "Basic blog layout",
+      "Markdown support",
+      "Minimal design",
+      "Easy to extend"
+    ],
+    "technologies": ["Next.js", "React", "Markdown"],
+    "icon": "newspaper.badge.ellipsis"
+  },
+  "nextjs-google-auth": {
+    "displayName": "Next.js + Google Auth",
+    "description": "Complete authentication setup with NextAuth and Google OAuth",
+    "category": "full",
+    "features": [
+      "Google OAuth integration",
+      "Protected routes",
+      "User sessions",
+      "Prisma database",
+      "TypeScript support"
+    ],
+    "technologies": ["Next.js 15", "NextAuth", "Prisma", "TypeScript", "Tailwind CSS"],
+    "icon": "person.crop.circle.badge.checkmark"
+  },
+  "nextjs-auth-blank": {
+    "displayName": "Next.js Auth (Blank)",
+    "description": "Minimal authentication starter with NextAuth",
+    "category": "blank",
+    "features": [
+      "Basic auth setup",
+      "Login/logout functionality",
+      "Simple protected routes",
+      "TypeScript ready"
+    ],
+    "technologies": ["Next.js", "NextAuth", "TypeScript"],
+    "icon": "person.crop.circle"
+  },
+  "fullstack-database": {
+    "displayName": "Full-Stack Database",
+    "description": "Complete full-stack application with Express backend and Prisma ORM",
+    "category": "full",
+    "features": [
+      "Express.js REST API",
+      "Prisma ORM with migrations",
+      "Docker Compose setup",
+      "User authentication",
+      "CRUD operations"
+    ],
+    "technologies": ["Express.js", "Next.js", "Prisma", "PostgreSQL", "Docker"],
+    "icon": "server.rack"
+  },
+  "fullstack-blank": {
+    "displayName": "Full-Stack (Blank)",
+    "description": "Minimal full-stack starter with separate client and server",
+    "category": "blank",
+    "features": [
+      "Basic Express server",
+      "React client setup",
+      "API communication ready",
+      "Simple project structure"
+    ],
+    "technologies": ["Express.js", "React", "Node.js"],
+    "icon": "arrow.up.arrow.down.square"
+  }
+}

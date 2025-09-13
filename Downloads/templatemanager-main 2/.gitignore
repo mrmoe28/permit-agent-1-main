@@ -1,0 +1,55 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Build directory
+build/
+build 2/
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation and tracking files are INCLUDED
+# These files help track development progress:
+# - DEVELOPMENT.md
+# - docs/
+# - .github/ISSUE_TEMPLATE/
+# 
+# Note: These files do NOT interfere with app functionality
+# They are documentation-only and enhance project maintainability
