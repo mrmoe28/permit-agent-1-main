@@ -107,6 +107,20 @@ Template Manager now includes comprehensive code signing support to eliminate ma
 ./build-universal.sh
 ```
 
+### Option 3: Pre-built DMG Download
+
+**Quick Download**: Download the pre-built DMG installer for immediate use.
+
+[![Download TemplateManager](https://img.shields.io/badge/Download-TemplateManager-1.0.0-blue?style=for-the-badge&logo=apple)](TemplateManager-1.0.0.dmg)
+
+**Installation Steps:**
+1. Download `TemplateManager-1.0.0.dmg`
+2. Double-click to mount the disk image
+3. Drag TemplateManager to your Applications folder
+4. Launch from Applications (may require right-click → "Open" for first launch)
+
+**Note**: The DMG contains a signed version that reduces security warnings. For zero warnings, use the command-line build with Apple Developer Program.
+
 ## Usage
 
 ### Creating a New Project
@@ -251,6 +265,26 @@ The app is built with:
 - SwiftUI for the user interface
 - Process API for shell script execution
 - JSON parsing for template configuration
+
+### Creating Distribution DMG
+
+To create a DMG for distribution:
+
+```bash
+# Create DMG from signed build
+./create-dmg.sh
+
+# Or create DMG from Ad Hoc signed build
+./build-adhoc.sh
+./create-dmg.sh
+```
+
+The DMG creation script will:
+- Create a properly formatted disk image
+- Include the app bundle
+- Add a link to Applications folder
+- Apply proper permissions and metadata
+- Optionally sign the DMG (if certificates available)
 
 ## Keyboard Shortcuts
 
