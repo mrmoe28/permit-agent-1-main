@@ -111,7 +111,7 @@ Template Manager now includes comprehensive code signing support to eliminate ma
 
 **Quick Download**: Download the pre-built DMG installer for immediate use.
 
-[![Download TemplateManager](https://img.shields.io/badge/Download-TemplateManager-1.0.0-blue?style=for-the-badge&logo=apple)](TemplateManager-1.0.0.dmg)
+[![Download TemplateManager](https://img.shields.io/badge/Download-TemplateManager-1.0.0-blue?style=for-the-badge&logo=apple)](https://github.com/mrmoe28/permit-agent-1-main/raw/main/TemplateManager-1.0.0.dmg)
 
 **Installation Steps:**
 1. Download `TemplateManager-1.0.0.dmg`
